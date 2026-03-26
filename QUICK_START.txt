@@ -1,0 +1,96 @@
+╔═════════════════════════════════════════════════════════════════════════════╗
+║                    ⚡ QUICK START - 3 MINUTOS                              ║
+╚═════════════════════════════════════════════════════════════════════════════╝
+
+En tu robot (con ROS2 instalado):
+
+┌─ Terminal 1: COMPILAR ────────────────────────────────────────────────────┐
+│                                                                             │
+│  $ cd ~/german/aeye-ros-workspace                                         │
+│  $ source /opt/ros/jazzy/setup.bash    # (o tu distro)                    │
+│  $ colcon build --packages-select map_tools                               │
+│                                                                             │
+│  Espera: "Summary: 1 package finished"                                    │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Terminal 2: LANZAR ──────────────────────────────────────────────────────┐
+│                                                                             │
+│  $ cd ~/german/aeye-ros-workspace                                         │
+│  $ source /opt/ros/jazzy/setup.bash                                       │
+│  $ source install/setup.bash                                              │
+│  $ ros2 launch robot real.launch.py                                       │
+│                                                                             │
+│  Espera: "[web_zone_server] WebSocket listening on ws://0.0.0.0:8765"   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Browser: ABRIR ──────────────────────────────────────────────────────────┐
+│                                                                             │
+│  Abre Firefox/Chrome y pega:                                              │
+│  file:///home/franco/german/aeye-ros-workspace/src/map_tools/web/index.html
+│                                                                             │
+│  Deberías ver la interfaz con:                                            │
+│  - Panel Connection (arriba)                                              │
+│  - Panel Zones                                                            │
+│  - Panel Navigation ← NEW! (botones para Set Goal)                        │
+│  - Mapa Leaflet (derecha)                                                 │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Browser: CONECTAR ───────────────────────────────────────────────────────┐
+│                                                                             │
+│  En el panel "Connection":                                                │
+│  1. URL: ws://127.0.0.1:8765 (si es local) o ws://<IP>:8765 (remoto)   │
+│  2. Click [Connect]                                                       │
+│  3. Debería decir: "✓ Connected to ws://..."                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Probar: GPS @ 1Hz ───────────────────────────────────────────────────────┐
+│                                                                             │
+│  En el navegador, panel "Events":                                         │
+│  Busca los timestamps de robot_pose                                       │
+│  Deben estar separados por ~1 segundo (1Hz)                              │
+│                                                                             │
+│  ✅ Si los timestamps están @ 0.1s → 10Hz (sin rate-limiting)           │
+│  ✅ Si los timestamps están @ 1.0s → 1Hz (rate-limiting activo) ✨      │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Probar: NAV2 GOAL ───────────────────────────────────────────────────────┐
+│                                                                             │
+│  En el navegador, panel "Navigation":                                     │
+│  1. Click [Set Goal (click map)]      → botón se pone ROJO               │
+│  2. Click en el mapa en cualquier sitio → 🔴 marcador rojo aparece      │
+│  3. Espera a ver:                                                         │
+│     - "Goal sent — navigating..." ✅ (verde) → éxito                     │
+│     - "Goal failed: ..." ❌ (rojo) → error (Nav2 no disponible?)        │
+│                                                                             │
+│  Para ver que Nav2 lo recibió (en otra terminal):                        │
+│  $ ros2 topic echo /navigate_to_pose/_action/status                      │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Probar: CANCELACIÓN ─────────────────────────────────────────────────────┐
+│                                                                             │
+│  Mientras el robot navega:                                                │
+│  1. Click [Cancel Goal]                                                   │
+│  2. Status debe decir: "Goal cancelled"                                   │
+│  3. El marcador 🔴 desaparece del mapa                                   │
+│  4. El robot se detiene                                                   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+✨ ¿QUÉ OCURRIÓ?
+═════════════════════════════════════════════════════════════════════════════
+
+✅ GPS broadcast rate-limited: 10Hz → 1Hz (configurable)
+✅ Nav2 goal support: click en mapa → robot navega
+✅ Goal cancellation: botón Cancel detiene navegación
+✅ Visual feedback: colores, icons, status messages
+✅ Error handling: mensajes descriptivos si algo falla
+
+TODO LISTO PARA USAR! 🚀
+

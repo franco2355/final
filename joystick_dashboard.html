@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Joystick Xbox Control - Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.18);
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .status-item {
+            background: #f8f9ff;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .status-item.active {
+            border-left-color: #10b981;
+            background: #f0fdf4;
+        }
+
+        .status-item.inactive {
+            border-left-color: #ef4444;
+            background: #fef2f2;
+        }
+
+        .status-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-value {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .status-item.active .status-value {
+            color: #10b981;
+        }
+
+        .status-item.inactive .status-value {
+            color: #ef4444;
+        }
+
+        .joystick-visual {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            margin: 30px 0;
+        }
+
+        .stick-container {
+            position: relative;
+            width: 150px;
+            height: 150px;
+            background: #f0f0f0;
+            border-radius: 50%;
+            border: 3px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .stick-label {
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.9em;
+            color: #666;
+            white-space: nowrap;
+        }
+
+        .stick-thumb {
+            width: 60px;
+            height: 60px;
+            background: #667eea;
+            border-radius: 50%;
+            position: absolute;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            transition: all 0.05s ease;
+        }
+
+        .stick-values {
+            position: absolute;
+            bottom: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.85em;
+            color: #999;
+            text-align: center;
+            white-space: nowrap;
+            width: 120px;
+        }
+
+        .buttons-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .button {
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 0.9em;
+            background: #f8f9ff;
+            cursor: default;
+            transition: all 0.1s ease;
+            font-weight: 500;
+        }
+
+        .button.pressed {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+            transform: scale(0.95);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .button.deadman {
+            border-color: #ef4444;
+        }
+
+        .button.deadman.pressed {
+            background: #ef4444;
+        }
+
+        .button.toggle {
+            border-color: #10b981;
+        }
+
+        .button.toggle.pressed {
+            background: #10b981;
+        }
+
+        .button.estop {
+            border-color: #f59e0b;
+        }
+
+        .button.estop.pressed {
+            background: #f59e0b;
+        }
+
+        .slider-container {
+            margin: 20px 0;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .slider {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: linear-gradient(to right, #667eea, #764ba2);
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            border: 2px solid #667eea;
+        }
+
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            border: 2px solid #667eea;
+        }
+
+        .log-container {
+            grid-column: 1 / -1;
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #444;
+        }
+
+        .log-entry {
+            margin: 2px 0;
+            display: flex;
+            gap: 10px;
+        }
+
+        .log-time {
+            color: #888;
+            flex-shrink: 0;
+        }
+
+        .log-message {
+            flex: 1;
+        }
+
+        .log-info { color: #00ff00; }
+        .log-warn { color: #ffff00; }
+        .log-error { color: #ff6b6b; }
+        .log-success { color: #69ff69; }
+
+        .indicator-light {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        .indicator-light.on {
+            background: #10b981;
+            box-shadow: 0 0 10px #10b981;
+        }
+
+        .indicator-light.off {
+            background: #ef4444;
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .velocity-bars {
+            display: flex;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .velocity-bar {
+            flex: 1;
+        }
+
+        .velocity-label {
+            font-size: 0.85em;
+            color: #666;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .bar-container {
+            background: #f0f0f0;
+            height: 30px;
+            border-radius: 5px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.05s ease;
+            position: relative;
+        }
+
+        .bar-fill::after {
+            content: '';
+            position: absolute;
+            right: -2px;
+            top: 0;
+            height: 100%;
+            width: 2px;
+            background: rgba(0,0,0,0.3);
+        }
+
+        .info-box {
+            background: #f0fdf4;
+            border-left: 4px solid #10b981;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-size: 0.95em;
+            color: #166534;
+        }
+
+        .warning-box {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-size: 0.95em;
+            color: #92400e;
+        }
+
+        .data-value {
+            font-family: 'Courier New', monospace;
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        footer {
+            text-align: center;
+            color: white;
+            margin-top: 40px;
+            opacity: 0.8;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎮 Joystick Xbox Control</h1>
+            <p>Dashboard en tiempo real - Cuatri Robot</p>
+        </header>
+
+        <div class="main-grid">
+            <!-- ESTADO -->
+            <div class="card">
+                <h2>📊 Estado del Sistema</h2>
+                <div class="status-grid">
+                    <div class="status-item active" id="manual-status">
+                        <div class="status-label">🎛️ Manual Mode</div>
+                        <div class="status-value">
+                            <span class="indicator-light on"></span>ACTIVO
+                        </div>
+                    </div>
+                    <div class="status-item active" id="deadman-status">
+                        <div class="status-label">🔒 Dead Man</div>
+                        <div class="status-value">
+                            <span class="indicator-light on"></span>ACTIVO
+                        </div>
+                    </div>
+                    <div class="status-item active" id="joy-status">
+                        <div class="status-label">📡 Joystick</div>
+                        <div class="status-value">
+                            <span class="indicator-light on"></span>CONECTADO
+                        </div>
+                    </div>
+                    <div class="status-item active" id="ros-status">
+                        <div class="status-label">🤖 ROS 2</div>
+                        <div class="status-value">
+                            <span class="indicator-light on"></span>OK
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-box">
+                    💡 <strong>Recuerda:</strong> Mantén presionado <span class="data-value">LB</span> para mover el robot.
+                </div>
+            </div>
+
+            <!-- VISUALIZACIÓN JOYSTICK -->
+            <div class="card">
+                <h2>🕹️ Sticks Analógicos</h2>
+                <div class="joystick-visual">
+                    <div class="stick-container">
+                        <div class="stick-thumb" id="stick-left" style="left: 50%; top: 50%; transform: translate(-50%, -50%);"></div>
+                        <div class="stick-label">Stick Izq</div>
+                        <div class="stick-values">
+                            X: <span class="data-value" id="left-x">0.00</span><br>
+                            Y: <span class="data-value" id="left-y">0.00</span>
+                        </div>
+                    </div>
+                    <div class="stick-container">
+                        <div class="stick-thumb" id="stick-right" style="left: 50%; top: 50%; transform: translate(-50%, -50%);"></div>
+                        <div class="stick-label">Stick Der</div>
+                        <div class="stick-values">
+                            X: <span class="data-value" id="right-x">0.00</span><br>
+                            Y: <span class="data-value" id="right-y">0.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BOTONES -->
+            <div class="card">
+                <h2>🔘 Botones</h2>
+                <div class="buttons-grid">
+                    <div class="button" id="btn-a">A</div>
+                    <div class="button" id="btn-b">B</div>
+                    <div class="button" id="btn-x">X</div>
+                    <div class="button" id="btn-y">Y</div>
+                    <div class="button deadman" id="btn-lb">LB<br><small>Dead Man</small></div>
+                    <div class="button toggle" id="btn-rb">RB<br><small>Toggle</small></div>
+                    <div class="button" id="btn-back">Back</div>
+                    <div class="button estop" id="btn-start">Start<br><small>E-STOP</small></div>
+                </div>
+
+                <div class="warning-box">
+                    ⚠️ <strong>LB (Dead Man)</strong> debe estar presionado para que el robot responda.
+                </div>
+            </div>
+
+            <!-- VELOCIDADES -->
+            <div class="card">
+                <h2>⚡ Velocidades Publicadas</h2>
+                <div class="velocity-bars">
+                    <div class="velocity-bar">
+                        <div class="velocity-label">
+                            <span>Lineal (m/s)</span>
+                            <span class="data-value" id="vel-linear">0.00</span>
+                        </div>
+                        <div class="bar-container">
+                            <div class="bar-fill" id="bar-linear"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="velocity-bars">
+                    <div class="velocity-bar">
+                        <div class="velocity-label">
+                            <span>Angular (r/s)</span>
+                            <span class="data-value" id="vel-angular">0.00</span>
+                        </div>
+                        <div class="bar-container">
+                            <div class="bar-fill" id="bar-angular"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-box">
+                    📍 <strong>Ackermann:</strong> El robot NO gira sin velocidad lineal (< 0.05 m/s).
+                </div>
+            </div>
+
+            <!-- SENSIBILIDAD -->
+            <div class="card">
+                <h2>🎚️ Sensibilidad (D-Pad)</h2>
+
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Lineal</span>
+                        <span class="data-value" id="sens-linear-val">1.00x</span>
+                    </div>
+                    <input type="range" min="0.1" max="2.0" step="0.1" value="1.0" class="slider" id="sens-linear">
+                </div>
+
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Angular</span>
+                        <span class="data-value" id="sens-angular-val">1.00x</span>
+                    </div>
+                    <input type="range" min="0.1" max="2.0" step="0.1" value="1.0" class="slider" id="sens-angular">
+                </div>
+
+                <div class="info-box">
+                    💡 Usa D-Pad ↑↓ para lineal y ←→ para angular. Rango: 0.1x a 2.0x
+                </div>
+            </div>
+
+            <!-- LOG -->
+            <div class="log-container">
+                <div class="log-entry">
+                    <span class="log-time">[00:00:00]</span>
+                    <span class="log-message log-info">✓ Joystick node iniciado</span>
+                </div>
+                <div class="log-entry">
+                    <span class="log-time">[00:00:01]</span>
+                    <span class="log-message log-info">✓ Conectado a /joy</span>
+                </div>
+                <div class="log-entry">
+                    <span class="log-time">[00:00:02]</span>
+                    <span class="log-message log-success">✓ Publicando en /cmd_vel_teleop</span>
+                </div>
+                <div class="log-entry">
+                    <span class="log-time">[00:00:03]</span>
+                    <span class="log-message log-info">✓ Esperando entrada del joystick...</span>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            🚀 Joystick Xbox Control System | ROS 2 Humble | Cuatri Robot
+        </footer>
+    </div>
+
+    <script>
+        // Simulación de datos para demostración
+        let joyData = {
+            axes: [0, 0, 0, 0, 0, 0, 0, 0],
+            buttons: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        };
+
+        let telemetry = {
+            manual_enabled: true,
+            deadman_active: true,
+            joy_ok: true,
+            linear_x: 0,
+            angular_z: 0,
+            linear_sensitivity: 1.0,
+            angular_sensitivity: 1.0
+        };
+
+        // Simulación de entrada de joystick
+        function updateJoystickSimulation() {
+            // Simular movimiento suave
+            joyData.axes[0] = Math.sin(Date.now() / 3000) * 0.5;  // Stick izq X
+            joyData.axes[1] = Math.cos(Date.now() / 2000) * 0.5;  // Stick izq Y
+
+            // Simular clicks ocasionales
+            if (Math.random() > 0.95) {
+                joyData.buttons[4] = 1; // LB
+            } else {
+                joyData.buttons[4] = 0;
+            }
+
+            updateUI();
+            requestAnimationFrame(updateJoystickSimulation);
+        }
+
+        function updateUI() {
+            // Actualizar sticks visuales
+            const leftX = joyData.axes[0] * 40;
+            const leftY = joyData.axes[1] * 40;
+            document.getElementById('stick-left').style.transform =
+                `translate(calc(-50% + ${leftX}px), calc(-50% + ${leftY}px))`;
+
+            document.getElementById('left-x').textContent = joyData.axes[0].toFixed(2);
+            document.getElementById('left-y').textContent = joyData.axes[1].toFixed(2);
+
+            // Actualizar botones
+            const buttonMap = ['A', 'B', 'X', 'Y', 'LB', 'RB', 'Back', 'Start'];
+            buttonMap.forEach((btn, idx) => {
+                const el = document.getElementById(`btn-${btn.toLowerCase()}`);
+                if (el) {
+                    if (joyData.buttons[idx]) {
+                        el.classList.add('pressed');
+                    } else {
+                        el.classList.remove('pressed');
+                    }
+                }
+            });
+
+            // Actualizar velocidades (simuladas)
+            telemetry.linear_x = joyData.axes[1] * 0.75;
+            telemetry.angular_z = joyData.axes[0] * 0.4;
+
+            if (!joyData.buttons[4]) { // Si LB no está presionado
+                telemetry.linear_x = 0;
+                telemetry.angular_z = 0;
+            }
+
+            document.getElementById('vel-linear').textContent = telemetry.linear_x.toFixed(2);
+            document.getElementById('vel-angular').textContent = telemetry.angular_z.toFixed(2);
+
+            // Barras de velocidad
+            const linPercent = Math.abs(telemetry.linear_x) / 0.75 * 100;
+            const angPercent = Math.abs(telemetry.angular_z) / 0.4 * 100;
+            document.getElementById('bar-linear').style.width = Math.min(linPercent, 100) + '%';
+            document.getElementById('bar-angular').style.width = Math.min(angPercent, 100) + '%';
+
+            // Estados
+            document.getElementById('manual-status').className = telemetry.manual_enabled ? 'status-item active' : 'status-item inactive';
+            document.getElementById('deadman-status').className = joyData.buttons[4] ? 'status-item active' : 'status-item inactive';
+            document.getElementById('joy-status').className = 'status-item active';
+            document.getElementById('ros-status').className = 'status-item active';
+        }
+
+        // Event listeners para sliders
+        document.getElementById('sens-linear').addEventListener('input', (e) => {
+            telemetry.linear_sensitivity = parseFloat(e.target.value);
+            document.getElementById('sens-linear-val').textContent = telemetry.linear_sensitivity.toFixed(2) + 'x';
+        });
+
+        document.getElementById('sens-angular').addEventListener('input', (e) => {
+            telemetry.angular_sensitivity = parseFloat(e.target.value);
+            document.getElementById('sens-angular-val').textContent = telemetry.angular_sensitivity.toFixed(2) + 'x';
+        });
+
+        // Iniciar simulación
+        updateJoystickSimulation();
+    </script>
+</body>
+</html>

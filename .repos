@@ -1,0 +1,22 @@
+repositories:
+  .:
+    type: git
+    url: git@github.com:GermanMorini/aeye-ros-workspace.git
+  src/navegacion_gps:
+    type: git
+    url: git@github.com:GermanMorini/aeye-navegacion.git
+  src/rslidar_msg:
+    type: git
+    url: https://github.com/RoboSense-LiDAR/rslidar_msg
+  src/rslidar_sdk:
+    type: git
+    url: https://github.com/RoboSense-LiDAR/rslidar_sdk.git
+  src/sensores:
+    type: git
+    url: git@github.com:GermanMorini/aeye-sensores.git
+  src/map_tools:
+    type: git
+    url: git@github.com:GermanMorini/aeye-map-tools.git
+  src/controller_server:
+    type: git
+    url: git@github.com:GermanMorini/aeye-controller-server.git

@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Arquitectura de Navegacion</title>
+  <style>
+    :root {
+      --bg: #edf3f8;
+      --panel: #ffffff;
+      --ink: #102235;
+      --muted: #496276;
+      --line: #9ab0c3;
+      --accent: #0b6ed5;
+      --accent-2: #0ea5e9;
+      --good: #147a4b;
+      --warn: #b86f00;
+      --bad: #b42318;
+      --shadow: 0 12px 28px rgba(16, 34, 53, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(14, 165, 233, 0.10), transparent 22rem),
+        linear-gradient(180deg, #f8fbfe, var(--bg));
+    }
+
+    .page {
+      max-width: 1380px;
+      margin: 0 auto;
+      padding: 28px 20px 48px;
+    }
+
+    h1, h2, h3, p {
+      margin: 0;
+    }
+
+    .hero {
+      display: grid;
+      gap: 16px;
+      background: linear-gradient(145deg, rgba(11, 110, 213, 0.10), rgba(14, 165, 233, 0.03));
+      border: 1px solid rgba(11, 110, 213, 0.18);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .hero h1 {
+      font-size: clamp(28px, 4vw, 44px);
+      line-height: 1.02;
+      letter-spacing: -0.02em;
+    }
+
+    .hero p {
+      max-width: 80ch;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .badge {
+      background: #ffffff;
+      border: 1px solid rgba(11, 110, 213, 0.20);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1.45fr 0.95fr;
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .stack {
+      display: grid;
+      gap: 18px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .panel h2 {
+      font-size: 22px;
+      margin-bottom: 10px;
+    }
+
+    .panel p.lead {
+      color: var(--muted);
+      line-height: 1.5;
+      margin-bottom: 14px;
+    }
+
+    .flow {
+      display: grid;
+      gap: 14px;
+    }
+
+    .flow-row {
+      display: flex;
+      align-items: stretch;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .card {
+      flex: 1 1 160px;
+      min-width: 160px;
+      background: linear-gradient(180deg, #ffffff, #f7fbff);
+      border: 1px solid #bfd0de;
+      border-radius: 16px;
+      padding: 14px;
+      position: relative;
+    }
+
+    .card .kicker {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .card h3 {
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
+
+    .card p {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 38px;
+      color: var(--accent);
+      font-size: 26px;
+      font-weight: 700;
+    }
+
+    .launch-grid,
+    .topic-grid,
+    .issues {
+      display: grid;
+      gap: 10px;
+    }
+
+    .launch {
+      padding: 12px 14px;
+      border: 1px solid #bfd0de;
+      border-radius: 14px;
+      background: linear-gradient(180deg, #fbfdff, #f3f8fd);
+    }
+
+    .launch strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 15px;
+    }
+
+    code {
+      font-family: "Consolas", "SFMono-Regular", "Liberation Mono", monospace;
+      background: #eff5fb;
+      border: 1px solid #d3e0ea;
+      border-radius: 8px;
+      padding: 2px 6px;
+      color: #11304a;
+      font-size: 0.95em;
+    }
+
+    .topic-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .topic {
+      border: 1px solid #bfd0de;
+      border-radius: 14px;
+      padding: 12px 14px;
+      background: #fbfdff;
+    }
+
+    .topic strong {
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .topic span {
+      display: block;
+      color: var(--muted);
+      line-height: 1.45;
+      font-size: 13px;
+    }
+
+    .summary {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .summary-item {
+      border-left: 4px solid var(--accent);
+      padding: 10px 12px;
+      background: #f7fbff;
+      border-radius: 0 12px 12px 0;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .issues .issue {
+      border-radius: 14px;
+      padding: 12px 14px;
+      border: 1px solid #e6c281;
+      background: #fff8ea;
+    }
+
+    .issue strong {
+      display: block;
+      color: #7b4b00;
+      margin-bottom: 6px;
+    }
+
+    .issue p {
+      color: #6d5b3b;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .footer-note {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 980px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .topic-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .flow-row {
+        flex-direction: column;
+      }
+
+      .arrow {
+        transform: rotate(90deg);
+        min-width: 0;
+        min-height: 28px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="hero">
+      <h1>Arquitectura de navegacion del cuatri</h1>
+      <p>
+        Pensalo como dos mundos que se unen al final. Un mundo "piensa" y decide a donde ir
+        (sensores + localizacion + Nav2 + UI), y el otro mundo "mueve" el robot real
+        (controller_server + serial + ESP32).
+      </p>
+      <div class="badge-row">
+        <div class="badge">Entrada real: <code>./tools/launch_real_nav.sh</code></div>
+        <div class="badge">Actuacion real: <code>./tools/launch_controller.sh</code></div>
+        <div class="badge">UI manual: <code>web_zone_server</code> en <code>8766</code></div>
+        <div class="badge">Salida final al robot: <code>/cmd_vel_final</code></div>
+      </div>
+    </section>
+
+    <div class="layout">
+      <div class="stack">
+        <section class="panel">
+          <h2>1. Stack general</h2>
+          <p class="lead">
+            Esta es la pelicula completa desde los sensores hasta las ruedas.
+          </p>
+          <div class="flow">
+            <div class="flow-row">
+              <div class="card">
+                <span class="kicker">Sensores</span>
+                <h3>Pixhawk + RS16</h3>
+                <p>
+                  Publican <code>/gps/fix</code>, <code>/imu/data</code>, <code>/odom</code> y
+                  <code>/scan_3d</code>.
+                </p>
+              </div>
+              <div class="arrow">→</div>
+              <div class="card">
+                <span class="kicker">Localizacion</span>
+                <h3>EKF + navsat_transform</h3>
+                <p>
+                  Fusionan GPS, IMU y odometria. Salen <code>/odometry/local</code>,
+                  <code>/odometry/gps</code> y los frames <code>map → odom → base_footprint</code>.
+                </p>
+              </div>
+              <div class="arrow">→</div>
+              <div class="card">
+                <span class="kicker">Navegacion</span>
+                <h3>Nav2</h3>
+                <p>
+                  Planifica y controla. Genera la velocidad automatica que despues pasa por seguridad.
+                </p>
+              </div>
+            </div>
+
+            <div class="flow-row">
+              <div class="card">
+                <span class="kicker">Seguridad</span>
+                <h3>collision_monitor</h3>
+                <p>
+                  Toma <code>/cmd_vel_nav</code> y saca <code>/cmd_vel_safe</code>, frenando si ve
+                  obstaculos con LiDAR o ultrasounds.
+                </p>
+              </div>
+              <div class="arrow">→</div>
+              <div class="card">
+                <span class="kicker">Arbitraje</span>
+                <h3>nav_command_server</h3>
+                <p>
+                  Decide si manda automatico o manual. Convierte todo a
+                  <code>interfaces/CmdVelFinal</code> y publica <code>/cmd_vel_final</code>.
+                </p>
+              </div>
+              <div class="arrow">→</div>
+              <div class="card">
+                <span class="kicker">Actuacion</span>
+                <h3>controller_server</h3>
+                <p>
+                  Toma <code>/cmd_vel_final</code>, lo transforma a direccion/freno/marcha y lo manda
+                  por serial al ESP32.
+                </p>
+              </div>
+              <div class="arrow">→</div>
+              <div class="card">
+                <span class="kicker">Hardware</span>
+                <h3>ESP32 + actuadores</h3>
+                <p>
+                  Mueven realmente direccion, traccion y freno del cuatri.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>2. Flujo automatico</h2>
+          <p class="lead">
+            Asi funciona cuando le mandas waypoints o una ruta desde la web.
+          </p>
+          <div class="flow-row">
+            <div class="card">
+              <span class="kicker">UI</span>
+              <h3>Pagina web</h3>
+              <p>
+                Mandas waypoints en lat/lon por WebSocket.
+              </p>
+            </div>
+            <div class="arrow">→</div>
+            <div class="card">
+              <span class="kicker">Gateway</span>
+              <h3>web_zone_server</h3>
+              <p>
+                Recibe los mensajes de la web y llama servicios ROS.
+              </p>
+            </div>
+            <div class="arrow">→</div>
+            <div class="card">
+              <span class="kicker">Servicio</span>
+              <h3>set_goal_ll</h3>
+              <p>
+                Llega al <code>nav_command_server</code> como
+                <code>SetNavGoalLL</code>.
+              </p>
+            </div>
+            <div class="arrow">→</div>
+            <div class="card">
+              <span class="kicker">Conversion</span>
+              <h3>fromLL</h3>
+              <p>
+                Convierte lat/lon a posiciones del frame <code>map</code>.
+              </p>
+            </div>
+            <div class="arrow">→</div>
+            <div class="card">
+              <span class="kicker">Nav2</span>
+              <h3>Actions</h3>
+              <p>
+                Ejecuta <code>FollowWaypoints</code> o <code>NavigateThroughPoses</code>.
+              </p>
+            </div>
+          </div>
+          <div class="summary">
+            <div class="summary-item">
+              En automatico, Nav2 produce velocidad; <code>collision_monitor</code> la filtra;
+              <code>nav_command_server</code> la convierte a <code>/cmd_vel_final</code>.
+            </div>
+            <div class="summary-item">
+              El ultimo tramo siempre es el mismo: <code>/cmd_vel_final → controller_server → serial → ESP32</code>.
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>3. Flujo manual desde la pagina o joystick</h2>
+          <p class="lead">
+            La forma correcta de meter manual es imitar la pagina, no saltarse el backend.
+          </p>
+          <div class="flow-row">
+            <div class="card">
+              <span class="kicker">Operador</span>
+              <h3>WASD / joystick</h3>
+              <p>
+                El usuario genera avance, giro y freno.
+              </p>
+            </div>
+            <div class="arrow">→</div>
+            <div class="card">
+              <span class="kicker">WebSocket</span>
+              <h3>set_manual_mode + set_manual_cmd</h3>
+              <p>
+                La pagina habla con <code>web_zone_server</code> en el puerto <code>8766</code>.
+              </p>
+            </div>
+            <div class="arrow">→</div>
+            <div class="card">
+              <span class="kicker">ROS</span>
+              <h3>/cmd_vel_teleop</h3>
+              <p>
+                El gateway publica el comando manual en el topic de teleop.
+              </p>
+            </div>
+            <div class="arrow">→</div>
+            <div class="card">
+              <span class="kicker">Arbitraje</span>
+              <h3>nav_command_server</h3>
+              <p>
+                Toma control manual, cancela autonomia si hace falta y vuelve a publicar
+                <code>/cmd_vel_final</code>.
+              </p>
+            </div>
+            <div class="arrow">→</div>
+            <div class="card">
+              <span class="kicker">Actuacion</span>
+              <h3>controller_server</h3>
+              <p>
+                Manda el comando fisico al cuatri.
+              </p>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="stack">
+        <section class="panel">
+          <h2>Launches que importan</h2>
+          <div class="launch-grid">
+            <div class="launch">
+              <strong><code>./tools/launch_real_nav.sh</code></strong>
+              Levanta sensores, EKF, <code>navsat_transform</code>, Nav2, zonas, snapshot y el backend
+              web. En la practica, es el "cerebro" del stack.
+            </div>
+            <div class="launch">
+              <strong><code>./tools/launch_controller.sh</code></strong>
+              Levanta <code>controller_server</code>. Sin esto, el stack puede pensar y mostrar estado,
+              pero no llega al ESP32.
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Topicos y servicios clave</h2>
+          <div class="topic-grid">
+            <div class="topic">
+              <strong><code>/gps/fix</code></strong>
+              <span>GPS crudo desde Pixhawk.</span>
+            </div>
+            <div class="topic">
+              <strong><code>/imu/data</code></strong>
+              <span>IMU usada por robot_localization.</span>
+            </div>
+            <div class="topic">
+              <strong><code>/odometry/local</code></strong>
+              <span>Odometria filtrada local del EKF.</span>
+            </div>
+            <div class="topic">
+              <strong><code>/scan</code></strong>
+              <span>LaserScan derivado del LiDAR 3D para costmaps.</span>
+            </div>
+            <div class="topic">
+              <strong><code>/cmd_vel_safe</code></strong>
+              <span>Velocidad ya pasada por seguridad.</span>
+            </div>
+            <div class="topic">
+              <strong><code>/cmd_vel_teleop</code></strong>
+              <span>Entrada manual desde la web o joystick.</span>
+            </div>
+            <div class="topic">
+              <strong><code>/cmd_vel_final</code></strong>
+              <span>Salida unica hacia el controlador fisico.</span>
+            </div>
+            <div class="topic">
+              <strong><code>/nav_command_server/set_goal_ll</code></strong>
+              <span>Servicio para mandarle waypoints geograficos.</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Frase corta para entenderlo</h2>
+          <div class="summary">
+            <div class="summary-item">
+              <strong>Automatico:</strong> sensores ubican al robot, Nav2 decide a donde ir,
+              seguridad filtra, y controller_server mueve el cuatri.
+            </div>
+            <div class="summary-item">
+              <strong>Manual:</strong> la pagina o el joystick no mueven directo;
+              le piden al backend manual que tome control, y el backend vuelve a usar
+              el mismo tramo final.
+            </div>
+            <div class="summary-item">
+              <strong>Salida final real:</strong> casi todo el sistema existe para terminar
+              produciendo <code>/cmd_vel_final</code>.
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Ojo: cosas corridas en el repo</h2>
+          <div class="issues">
+            <div class="issue">
+              <strong><code>real.launch.py</code> parece incompleto</strong>
+              <p>
+                En simulacion el repo si agrega <code>nav_command_server</code>, pero en el
+                <code>real.launch.py</code> de fuente no aparece agregado. La arquitectura lo necesita.
+              </p>
+            </div>
+            <div class="issue">
+              <strong>Drift en <code>/cmd_vel_teleop</code></strong>
+              <p>
+                <code>joystick_node.py</code> publica <code>geometry_msgs/Twist</code>, pero
+                <code>nav_command_server</code> hoy consume <code>interfaces/CmdVelFinal</code>.
+                Eso explica por que el teleop clasico esta raro.
+              </p>
+            </div>
+            <div class="issue">
+              <strong>Conflicto sin resolver en localizacion</strong>
+              <p>
+                <code>dual_ekf_navsat_params.yaml</code> todavia tiene marcadores de merge en el
+                <code>datum</code>. Eso es ruido real del repo fuente.
+              </p>
+            </div>
+          </div>
+          <p class="footer-note">
+            Archivo creado para estudiar el sistema. Si queres, el siguiente paso es hacer otro HTML
+            solo con "quien publica / quien consume" topic por topic.
+          </p>
+        </section>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,11 @@
+# archivos ignorados
+**/__pycache__
+log
+build
+install
+*.png
+*.jpg
+
+# En el workspace original el root ignoraba src/* porque cada paquete vivia
+# como repo anidado. En este snapshot unificado el arbol src completo debe
+# quedar versionado.

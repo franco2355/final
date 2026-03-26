@@ -1,0 +1,171 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		}
+	],
+	"settings": {
+		"task.allowAutomaticTasks": "on"
+	},
+	"launch": {
+		"version": "0.2.0",
+		"configurations": [
+			{
+				"name": "C++ debug",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceFolder}/main",
+				"args": [],
+				"stopAtEntry": false,
+				"cwd": "${workspaceFolder}",
+				"environment": [],
+				"externalConsole": false,
+				"MIMode": "gdb",
+				"setupCommands": [
+					{
+						"description": "Enable pretty-printing for gdb",
+						"text": "-enable-pretty-printing",
+						"ignoreFailures": true
+					}
+				]
+			},
+			{
+				"name": "C++ compilar y debuggear",
+				"type": "cppdbg",
+				"request": "launch",
+				"preLaunchTask": "compilar",
+				"program": "${workspaceFolder}/main",
+				"args": [],
+				"stopAtEntry": false,
+				"cwd": "${workspaceFolder}",
+				"environment": [],
+				"externalConsole": false,
+				"MIMode": "gdb",
+				"setupCommands": [
+					{
+						"description": "Enable pretty-printing for gdb",
+						"text": "-enable-pretty-printing",
+						"ignoreFailures": true
+					}
+				]
+			},
+			{
+				"name": "Go debug",
+				"type": "go",
+				"request": "launch",
+				"mode": "debug",
+				"program": "${fileDirname}/${fileBasename}",
+				"args": [],
+				"env": {},
+				"console": "integratedTerminal"
+			}
+		]
+	},
+	"tasks": {
+		"version": "2.0.0",
+		"tasks": [
+			{
+				"label": "🔐 xhost local root (auto)",
+				"type": "shell",
+				"detail": "Es para activar la visualización gráfica de programas dentro del contenedor",
+				"command": "echo \"xhost auto task\"",
+				"linux": {
+					"command": "bash -lc 'command -v xhost >/dev/null 2>&1 && xhost +local:root || true'"
+				},
+				"runOptions": {
+					"runOn": "folderOpen"
+				},
+				"problemMatcher": []
+			},
+			{
+				"label": "🔄 VCS import/pull",
+				"detail": "Actualiza workspace y repos en src usando vcs + .repos",
+				"type": "shell",
+				"command": "${workspaceFolder}/tools/vcs-import.sh",
+				"problemMatcher": []
+			},
+			{
+				"label": "📋 VCS Status",
+				"detail": "Muestra el estado del workspace y de todos los repos en src",
+				"type": "shell",
+				"command": "${workspaceFolder}/tools/vcs-status.sh",
+				"problemMatcher": []
+			},
+			{
+				"label": "📤 VCS Push",
+				"detail": "Hace push del workspace y de los repos en src",
+				"type": "shell",
+				"command": "${workspaceFolder}/tools/vcs-push.sh",
+				"problemMatcher": []
+			},
+			{
+				"label": "🔧 RECOMPILAR DOCKER",
+				"type": "shell",
+				"command": "docker compose build ros2",
+				"problemMatcher": []
+			},
+			{
+				"label": "🖼️ VER FRAMES",
+				"type": "shell",
+				"command": "sh tools/exec.sh ros2 run tf2_tools view_frames",
+				"problemMatcher": []
+			},
+			{
+				"label": "🐳 EJECUTAR COMANDO",
+				"type": "shell",
+				"command": "docker exec -ti ros2 bash",
+				"problemMatcher": []
+			},
+			{
+				"label": "🚀 LEVANTAR DOCKER",
+				"type": "shell",
+				"command": "docker compose up -d",
+				"problemMatcher": []
+			},
+			{
+				"label": "❌ DETENER DOCKER",
+				"type": "shell",
+				"command": "docker compose down",
+				"problemMatcher": []
+			},
+			{
+				"label": "⚙️ COMPILAR ROS",
+				"type": "shell",
+				"command": "sh tools/compile-ros.sh",
+				"problemMatcher": []
+			},
+			{
+				"label": "🖥️ LANZAR SIMULACION",
+				"type": "shell",
+				"command": "sh tools/exec.sh ros2 launch navegacion_gps simulacion.launch.py",
+				"problemMatcher": []
+			},
+			{
+				"label": "📐 EDITOR DE POLIGONOS",
+				"type": "shell",
+				"command": "sh tools/exec.sh ros2 launch map_tools no_go_editor.launch.py",
+				"problemMatcher": []
+			},
+			{
+				"label": "⌨️ TELEOP TWIST KEYBOARD",
+				"type": "shell",
+				"command": "sh tools/exec.sh ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args -r cmd_vel:=/cmd_vel_safe",
+				"problemMatcher": []
+			}
+		],
+		"inputs": [
+			{
+				"id": "serviceName",
+				"description": "Nombre del servicio de Docker",
+				"default": "users-api",
+				"type": "promptString"
+			},
+			{
+				"id": "command",
+				"description": "Comando a ejecutar",
+				"default": "bash",
+				"type": "promptString"
+			}
+		]
+	}
+}

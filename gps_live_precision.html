@@ -1,0 +1,1031 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GPS Robot en Vivo</title>
+  <style>
+    :root {
+      --bg: #07111d;
+      --panel: rgba(9, 20, 34, 0.92);
+      --panel-2: rgba(16, 32, 54, 0.92);
+      --border: rgba(110, 168, 255, 0.22);
+      --text: #edf4ff;
+      --muted: #97abc8;
+      --accent: #39b7ff;
+      --accent-2: #87f0ff;
+      --ok: #26c281;
+      --warn: #ffbe55;
+      --bad: #ff6b6b;
+      --rtk-fixed: #00e5a0;
+      --rtk-float: #ffd166;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html, body { height: 100%; overflow: hidden; margin: 0; }
+
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left,  rgba(57,183,255,0.16), transparent 30%),
+        radial-gradient(circle at bottom right, rgba(135,240,255,0.12), transparent 28%),
+        linear-gradient(160deg, #040b14 0%, #0a1524 42%, #09131f 100%);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Top bar ── */
+    .top-bar {
+      flex-shrink: 0;
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(7,16,28,0.96);
+      backdrop-filter: blur(12px);
+    }
+
+    .conn-fields {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 7px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .conn-actions { display: flex; gap: 7px; flex-shrink: 0; }
+
+    .conn-status { display: flex; gap: 14px; align-items: center; flex-shrink: 0; }
+
+    .status-chip { display: flex; align-items: center; gap: 5px; }
+
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+
+    .status-chip:has(.status-ok)   .dot { background: var(--ok); }
+    .status-chip:has(.status-warn) .dot { background: var(--warn); }
+    .status-chip:has(.status-bad)  .dot { background: var(--bad); }
+
+    /* ── Main layout ── */
+    .main {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 10px;
+      padding: 10px 12px 10px 10px;
+      overflow: hidden;
+    }
+
+    /* ── Left column ── */
+    .left-col {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 0;
+    }
+
+    /* ── Panel base ── */
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      backdrop-filter: blur(10px);
+    }
+
+    /* ── Fix chip ── */
+    .telem-panel { flex-shrink: 0; padding: 12px 14px; }
+
+    .fix-chip {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 2px solid rgba(141,177,226,0.18);
+      background: var(--panel-2);
+      margin-bottom: 10px;
+      transition: border-color .35s, box-shadow .35s;
+    }
+
+    .fix-chip[data-ft="fixed"] { border-color: var(--rtk-fixed); box-shadow: 0 0 16px rgba(0,229,160,0.18); }
+    .fix-chip[data-ft="float"] { border-color: var(--rtk-float); }
+    .fix-chip[data-ft="dgps"]  { border-color: var(--accent); }
+    .fix-chip[data-ft="nofix"] { border-color: var(--bad); }
+
+    .fix-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--muted); flex-shrink: 0; margin-top: 5px;
+      transition: background .35s;
+    }
+
+    .fix-chip[data-ft="fixed"] .fix-dot { background: var(--rtk-fixed); animation: pulse-dot 1.4s ease-in-out infinite; }
+    .fix-chip[data-ft="float"] .fix-dot { background: var(--rtk-float); }
+    .fix-chip[data-ft="dgps"]  .fix-dot { background: var(--accent); }
+    .fix-chip[data-ft="nofix"] .fix-dot { background: var(--bad); }
+
+    @keyframes pulse-dot {
+      0%,100% { opacity:1; transform:scale(1); }
+      50%      { opacity:.4; transform:scale(.7); }
+    }
+
+    .fix-label { font-size: 10px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin-bottom:2px; }
+    .fix-value { font-size: 16px; font-weight: 800; line-height: 1.1; transition: color .35s; }
+
+    .fix-chip[data-ft="fixed"]  .fix-value { color: var(--rtk-fixed); }
+    .fix-chip[data-ft="float"]  .fix-value { color: var(--rtk-float); }
+    .fix-chip[data-ft="dgps"]   .fix-value { color: var(--accent); }
+    .fix-chip[data-ft="nofix"]  .fix-value { color: var(--bad); }
+
+    .fix-sub { font-size: 10px; color: var(--muted); margin-top: 3px; font-family: monospace; line-height: 1.3; }
+
+    /* coords */
+    .coords-grid { display: grid; gap: 3px; }
+
+    .coord-row {
+      display: flex; justify-content: space-between; align-items: baseline;
+      padding: 5px 2px;
+      border-bottom: 1px solid rgba(110,168,255,0.07);
+    }
+    .coord-row:last-child { border-bottom: 0; }
+
+    .coord-label { font-size: 10px; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); width:34px; flex-shrink:0; }
+    .coord-value { font-size: 14px; font-weight:700; font-family: monospace; text-align:right; }
+
+    /* ── Metrics panel ── */
+    .metrics-panel { flex: 1; min-height: 0; padding: 12px; overflow: hidden; }
+
+    .section-label {
+      font-size: 10px; letter-spacing:.1em; text-transform:uppercase;
+      color: var(--accent-2); font-weight:700; margin-bottom: 9px;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .metric {
+      padding: 10px 11px;
+      border-radius: 11px;
+      background: var(--panel-2);
+      border: 1px solid rgba(141,177,226,0.12);
+    }
+
+    .metric-label { font-size: 9px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-bottom:5px; }
+    .metric-value { font-size: 14px; font-weight:800; line-height:1.1; word-break:break-word; }
+    .metric-sub   { margin-top:4px; color:var(--muted); font-size:10px; font-family:monospace; }
+
+    /* ── RTK button ── */
+    .rtk-open-btn {
+      flex-shrink: 0;
+      width: 100%;
+      padding: 11px;
+      font-size: 13px; font-weight: 700;
+      background: rgba(19,39,66,0.9);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: background .18s;
+    }
+
+    .rtk-open-btn:hover { background: rgba(30,56,96,0.9); }
+
+    .rtk-open-btn .rtk-btn-state {
+      font-size: 11px;
+      font-weight: 600;
+      font-family: monospace;
+    }
+
+    /* ── Map column ── */
+    .map-col { display:flex; flex-direction:column; min-height:0; }
+
+    .map-wrap {
+      flex:1; min-height:0; overflow:hidden; padding:0;
+      display:flex; flex-direction:column;
+    }
+
+    .map-toolbar {
+      flex-shrink:0;
+      display:flex; justify-content:space-between; align-items:center;
+      gap:10px; padding:9px 14px;
+      border-bottom: 1px solid rgba(141,177,226,0.12);
+      background: rgba(10,22,38,0.92);
+    }
+
+    .map-toolbar-left { display:flex; align-items:center; gap:12px; }
+
+    .map-mode-label { display:flex; align-items:center; gap:7px; font-size:12px; color:var(--muted); }
+    .map-mode-label select { width:auto; padding:5px 9px; font-size:12px; }
+
+    .map-frame { flex:1; width:100%; border:0; min-height:0; display:block; }
+
+    /* ── RTK Modal ── */
+    .rtk-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(2,8,18,0.72);
+      backdrop-filter: blur(6px);
+      padding: 20px;
+    }
+
+    .rtk-modal.open { display: flex; }
+
+    .rtk-modal-inner {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.5);
+      width: min(820px, 100%);
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: modal-in .2s ease;
+    }
+
+    @keyframes modal-in {
+      from { opacity:0; transform:scale(.97) translateY(8px); }
+      to   { opacity:1; transform:scale(1)  translateY(0); }
+    }
+
+    .modal-hdr {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .modal-title { font-size: 15px; font-weight: 700; letter-spacing:.04em; text-transform:uppercase; color:var(--accent-2); }
+
+    .modal-state-chips { display:flex; gap:8px; align-items:center; }
+
+    .state-chip {
+      padding: 3px 11px; border-radius:20px;
+      background: var(--panel-2); border:1px solid var(--border);
+      font-size: 11px;
+    }
+
+    .modal-close {
+      width: 32px; height: 32px;
+      border: 1px solid rgba(141,177,226,0.2);
+      background: rgba(255,255,255,0.05);
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex; align-items:center; justify-content:center;
+      font-size: 16px; color: var(--muted);
+      transition: background .15s, color .15s;
+      flex-shrink: 0;
+    }
+
+    .modal-close:hover { background: rgba(255,107,107,0.15); color: var(--bad); }
+
+    .modal-body {
+      padding: 20px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    /* RTK body inside modal */
+    .rtk-body { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; align-items: start; }
+
+    .rtk-catalog { display: grid; gap: 10px; }
+
+    .catalog-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+    .divider { height:1px; background: rgba(110,168,255,0.13); }
+
+    .rtk-form { display: grid; gap: 10px; }
+
+    .notes {
+      padding:10px 13px; border-radius:11px;
+      background: rgba(255,255,255,0.03);
+      border: 1px dashed rgba(141,177,226,0.15);
+      color:var(--muted); font-size:12px; line-height:1.5;
+    }
+
+    .url-row { display:grid; grid-template-columns:1fr auto; gap:8px; align-items:end; }
+    .url-row label  { margin:0; }
+    .url-row button { padding:9px 13px; font-size:12px; white-space:nowrap; }
+
+    .form-2col      { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .form-host-port { display:grid; grid-template-columns:2fr 1fr; gap:8px; }
+    .form-actions   { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:4px; }
+
+    /* ── Shared inputs ── */
+    label { display:grid; gap:3px; font-size:12px; color:var(--muted); }
+
+    input, select {
+      width:100%;
+      border: 1px solid rgba(141,177,226,0.18);
+      background: rgba(7,18,31,0.78);
+      color: var(--text);
+      border-radius: 9px;
+      padding: 8px 11px;
+      font-size: 13px;
+      outline: none;
+    }
+
+    button, .link-button {
+      border:0; border-radius:10px;
+      padding:9px 14px; font-size:13px; font-weight:700;
+      cursor:pointer; text-decoration:none; text-align:center;
+      transition: transform .15s, opacity .15s;
+    }
+
+    button:hover, .link-button:hover { transform: translateY(-1px); }
+    .modal-close:hover { transform: none; }
+
+    .primary   { background: linear-gradient(135deg, var(--accent), #1d7bff); color:white; }
+    .secondary { background: rgba(19,39,66,0.9); color:var(--text); border:1px solid rgba(141,177,226,0.16); }
+    .danger    { background: rgba(255,107,107,0.12); color:var(--bad); border:1px solid rgba(255,107,107,0.28); }
+    .maps      { background: linear-gradient(135deg, #2cb67d, #1a9f5f); color:white; white-space:nowrap; }
+
+    .badge-value { font-size:12px; font-weight:700; }
+    .status-ok   { color:var(--ok); }
+    .status-warn { color:var(--warn); }
+    .status-bad  { color:var(--bad); }
+    .mono { font-family:"SFMono-Regular",Consolas,monospace; }
+
+    /* ── Responsive ── */
+    @media (max-width:700px) {
+      html, body { overflow:auto; height:auto; }
+      .main { grid-template-columns:1fr; overflow:visible; }
+      .map-frame { height:50vh; }
+      .rtk-body { grid-template-columns:1fr; }
+    }
+
+    @media (max-width:540px) {
+      .rtk-modal { padding:8px; }
+      .form-2col, .form-host-port, .form-actions { grid-template-columns:1fr; }
+      .conn-fields { grid-template-columns:1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Top bar ── -->
+  <div class="top-bar">
+    <div class="conn-fields">
+      <label>Host<input id="host" value="100.111.4.7" /></label>
+      <label>WS Pose<input id="posePort" value="8766" /></label>
+      <label>WS Sensores<input id="sensorsPort" value="8001" /></label>
+      <label>HTTP<input id="sensorsHttpPort" value="8000" /></label>
+    </div>
+    <div class="conn-actions">
+      <button id="connectBtn" class="primary">Conectar</button>
+      <button id="disconnectBtn" class="secondary">Desconectar</button>
+    </div>
+    <div class="conn-status">
+      <div class="status-chip">
+        <span class="dot"></span>
+        <span id="poseState" class="badge-value status-bad">Desconectado</span>
+      </div>
+      <div class="status-chip">
+        <span class="dot"></span>
+        <span id="sensorsState" class="badge-value status-warn">No conectado</span>
+      </div>
+      <div class="status-chip">
+        <span style="font-size:11px;color:var(--muted)">⏱</span>
+        <span id="lastUpdate" class="badge-value mono">-</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Main ── -->
+  <div class="main">
+
+    <!-- Left column -->
+    <div class="left-col">
+
+      <!-- Fix + coords -->
+      <section class="panel telem-panel">
+        <div id="fixBadge" class="fix-chip" data-ft="">
+          <div class="fix-dot"></div>
+          <div>
+            <div class="fix-label">Fix Type</div>
+            <div id="fixTypeValue" class="fix-value">Sin datos</div>
+            <div id="fixTypeSub" class="fix-sub">-</div>
+          </div>
+        </div>
+        <div class="coords-grid">
+          <div class="coord-row">
+            <span class="coord-label">Lat</span>
+            <span id="latValue" class="coord-value">-</span>
+          </div>
+          <div class="coord-row">
+            <span class="coord-label">Lon</span>
+            <span id="lonValue" class="coord-value">-</span>
+          </div>
+          <div class="coord-row">
+            <span class="coord-label">Alt</span>
+            <span id="altValue" class="coord-value">-</span>
+          </div>
+          <div class="coord-row">
+            <span class="coord-label">HDG</span>
+            <span id="headingValue" class="coord-value">-</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Metrics -->
+      <section class="panel metrics-panel">
+        <div class="section-label">Precision GPS</div>
+        <div class="metrics-grid">
+          <div class="metric">
+            <div class="metric-label">RTK / RTCM</div>
+            <div id="rtkStatusValue" class="metric-value">No disponible</div>
+            <div id="rtkStatusSub" class="metric-sub">-</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Precision H</div>
+            <div id="precisionValue" class="metric-value">No disponible</div>
+            <div id="precisionSub" class="metric-sub">-</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Precision V</div>
+            <div id="verticalPrecisionValue" class="metric-value">No disponible</div>
+            <div id="verticalPrecisionSub" class="metric-sub">-</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">NavSatFix raw</div>
+            <div id="navSatRawValue" class="metric-value">Sin datos</div>
+            <div id="navSatRawSub" class="metric-sub">-</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RTK open button -->
+      <button class="rtk-open-btn" id="rtkOpenBtn">
+        <span>Bases RTK</span>
+        <span id="rtkOpenBtnState" class="rtk-btn-state status-warn">Sin catalogo</span>
+      </button>
+
+    </div>
+
+    <!-- Map -->
+    <div class="map-col">
+      <section class="panel map-wrap">
+        <div class="map-toolbar">
+          <div class="map-toolbar-left">
+            <label class="map-mode-label">
+              Vista
+              <select id="mapMode">
+                <option value="satellite" selected>Satelital</option>
+                <option value="roadmap">Callejero</option>
+              </select>
+            </label>
+            <div id="mapState" class="badge-value status-warn">Esperando posicion</div>
+          </div>
+          <a id="googleMapsBtn" class="link-button maps" href="https://maps.google.com/" target="_blank" rel="noopener noreferrer">
+            Abrir en Google Maps
+          </a>
+        </div>
+        <iframe
+          id="mapFrame"
+          class="map-frame"
+          title="Mapa del robot"
+          src="https://www.google.com/maps?q=-31.4858247,-64.2410533&z=19&t=k&output=embed"
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"></iframe>
+      </section>
+    </div>
+
+  </div>
+
+  <!-- ── RTK Modal ── -->
+  <div class="rtk-modal" id="rtkModal">
+    <div class="rtk-modal-inner">
+
+      <div class="modal-hdr">
+        <span class="modal-title">Bases RTK</span>
+        <div class="modal-state-chips">
+          <span class="state-chip">
+            <span id="rtkSourceStateValue" class="badge-value status-warn">Sin catalogo</span>
+          </span>
+          <span class="state-chip">
+            <span id="rtkSourceStateSub" class="badge-value mono">-</span>
+          </span>
+        </div>
+        <button class="modal-close" id="rtkCloseBtn" title="Cerrar">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="rtk-body">
+
+          <!-- Catálogo -->
+          <div class="rtk-catalog">
+            <label>Base activa<select id="rtkSourceSelect"><option value="">Cargar bases primero</option></select></label>
+            <div class="catalog-actions">
+              <button id="loadSourcesBtn" class="secondary">↺ Cargar</button>
+              <button id="applySourceBtn" class="secondary">Aplicar</button>
+            </div>
+            <div class="divider"></div>
+            <div id="rtkSourceEditState" class="badge-value mono">Sin cambios</div>
+          </div>
+
+          <!-- Formulario -->
+          <div class="rtk-form">
+            <div class="notes">Pega una URL NTRIP o completá los campos manualmente. Si editás una base existente y dejás usuario/clave vacíos, se conservan.</div>
+            <div class="url-row">
+              <label>URL NTRIP<input id="rtkUrl" placeholder="ntrip://usuario:clave@host:2101/MOUNTPOINT" /></label>
+              <button id="parseRtkUrlBtn" class="secondary">Parsear</button>
+            </div>
+            <div class="form-2col">
+              <label>ID base<input id="rtkSourceId" placeholder="casisa" /></label>
+              <label>Etiqueta<input id="rtkSourceLabel" placeholder="CASISA" /></label>
+            </div>
+            <div class="form-host-port">
+              <label>Host<input id="rtkSourceHost" placeholder="rtk2go.com" /></label>
+              <label>Puerto<input id="rtkSourcePort" value="2101" /></label>
+            </div>
+            <label>Mountpoint<input id="rtkSourceMountpoint" placeholder="CASISA" /></label>
+            <div class="form-2col">
+              <label>Usuario<input id="rtkSourceUsername" placeholder="Opcional" /></label>
+              <label>Clave<input id="rtkSourcePassword" type="password" placeholder="Opcional" /></label>
+            </div>
+            <div class="form-actions">
+              <button id="saveSourceBtn" class="secondary">Guardar</button>
+              <button id="saveActivateSourceBtn" class="primary">Guardar y activar</button>
+              <button id="deleteSourceBtn" class="danger">Borrar base</button>
+              <button id="clearSourceFormBtn" class="secondary">Limpiar</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      poseWs: null,
+      sensorsWs: null,
+      lat: null,
+      lon: null,
+      headingDeg: null,
+      gps: null,
+      gpsMeta: null,
+      rtkSources: [],
+      rtkSourceState: null,
+      mapMode: "satellite",
+      lastMapRefreshMs: 0,
+    };
+
+    const $ = (id) => document.getElementById(id);
+
+    // ── Modal open/close ──
+    function openRtkModal()  { $("rtkModal").classList.add("open"); }
+    function closeRtkModal() { $("rtkModal").classList.remove("open"); }
+
+    $("rtkOpenBtn").addEventListener("click", openRtkModal);
+    $("rtkCloseBtn").addEventListener("click", closeRtkModal);
+    $("rtkModal").addEventListener("click", (e) => { if (e.target === $("rtkModal")) closeRtkModal(); });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeRtkModal(); });
+
+    function setStatus(id, text, cls) {
+      const el = $(id);
+      el.textContent = text;
+      el.className = `badge-value ${cls}`;
+    }
+
+    function stampNow() {
+      $("lastUpdate").textContent = new Date().toLocaleTimeString();
+    }
+
+    function sleepMs(ms) {
+      return new Promise((resolve) => window.setTimeout(resolve, ms));
+    }
+
+    function setRtkSourceEditState(text, cls = "status-warn") {
+      const el = $("rtkSourceEditState");
+      el.textContent = text;
+      el.className = `badge-value mono ${cls}`;
+    }
+
+    function sensorsHttpBase() {
+      const host = $("host").value.trim() || "100.111.4.7";
+      const httpPort = $("sensorsHttpPort").value.trim() || "8000";
+      return `http://${host}:${httpPort}`;
+    }
+
+    function googleMapTypeParam() {
+      return state.mapMode === "roadmap" ? "m" : "k";
+    }
+
+    function refreshMapFrame(force = false) {
+      if (!Number.isFinite(state.lat) || !Number.isFinite(state.lon)) return;
+      const now = Date.now();
+      if (!force && (now - state.lastMapRefreshMs) < 15000) return;
+      const lat = state.lat.toFixed(7);
+      const lon = state.lon.toFixed(7);
+      $("mapFrame").src =
+        `https://www.google.com/maps?q=${lat},${lon}&z=19&t=${googleMapTypeParam()}&output=embed`;
+      state.lastMapRefreshMs = now;
+      $("mapState").textContent = "Posicion cargada";
+      $("mapState").className = "badge-value status-ok";
+    }
+
+    function updateMapsLink(forceMap = false) {
+      const btn = $("googleMapsBtn");
+      if (Number.isFinite(state.lat) && Number.isFinite(state.lon)) {
+        const lat = state.lat.toFixed(7);
+        const lon = state.lon.toFixed(7);
+        btn.href = `https://www.google.com/maps?q=${lat},${lon}`;
+        refreshMapFrame(forceMap);
+      } else {
+        btn.href = "https://maps.google.com/";
+        $("mapState").textContent = "Esperando posicion";
+        $("mapState").className = "badge-value status-warn";
+      }
+    }
+
+    function renderPose() {
+      $("latValue").textContent     = Number.isFinite(state.lat)        ? state.lat.toFixed(7)              : "-";
+      $("lonValue").textContent     = Number.isFinite(state.lon)        ? state.lon.toFixed(7)              : "-";
+      $("headingValue").textContent = Number.isFinite(state.headingDeg) ? `${state.headingDeg.toFixed(1)}°` : "-";
+      updateMapsLink();
+    }
+
+    function renderRtkSourceState() {
+      const sourceState = state.rtkSourceState || {};
+      const label = sourceState.active_source_label || sourceState.active_source_id || "Sin catalogo";
+
+      $("rtkSourceStateValue").textContent = label;
+      $("rtkSourceStateValue").className   = `badge-value ${sourceState.connected ? "status-ok" : "status-warn"}`;
+
+      // also update the button in the left col
+      $("rtkOpenBtnState").textContent = label;
+      $("rtkOpenBtnState").className   = `rtk-btn-state ${sourceState.connected ? "status-ok" : "status-warn"}`;
+
+      const pieces = [];
+      if (sourceState.connected === true)  pieces.push("conectada");
+      else if (sourceState.connected === false) pieces.push("sin enlace");
+      if (Number.isFinite(Number(sourceState.rtcm_age_s)))
+        pieces.push(`rtcm_age=${Number(sourceState.rtcm_age_s).toFixed(2)} s`);
+      if (Number.isFinite(Number(sourceState.received_count)))
+        pieces.push(`msgs=${Number(sourceState.received_count)}`);
+      if (sourceState.last_error) pieces.push(`error=${sourceState.last_error}`);
+      $("rtkSourceStateSub").textContent = pieces.length ? pieces.join(" | ") : "-";
+    }
+
+    function renderRtkSources() {
+      const select = $("rtkSourceSelect");
+      const currentValue = select.value;
+      select.innerHTML = "";
+
+      if (!Array.isArray(state.rtkSources) || state.rtkSources.length === 0) {
+        const opt = document.createElement("option");
+        opt.value = ""; opt.textContent = "Sin catalogo de bases";
+        select.appendChild(opt);
+        renderRtkSourceState();
+        return;
+      }
+
+      for (const source of state.rtkSources) {
+        const opt = document.createElement("option");
+        opt.value = source.id;
+        const mp = source.mountpoint ? `/${source.mountpoint}` : "";
+        opt.textContent = `${source.label} (${source.host}${mp})`;
+        select.appendChild(opt);
+      }
+
+      const activeId = state.rtkSourceState && state.rtkSourceState.active_source_id;
+      select.value = currentValue && state.rtkSources.some((s) => s.id === currentValue)
+        ? currentValue : (activeId || state.rtkSources[0].id);
+      renderRtkSourceState();
+      syncRtkSourceFormFromSelection();
+    }
+
+    function selectedRtkSourceRecord() {
+      return state.rtkSources.find((s) => s.id === $("rtkSourceSelect").value) || null;
+    }
+
+    function clearRtkSourceForm(clearSelection = false) {
+      ["rtkUrl","rtkSourceId","rtkSourceLabel","rtkSourceHost","rtkSourceMountpoint","rtkSourceUsername","rtkSourcePassword"]
+        .forEach(id => $(id).value = "");
+      $("rtkSourcePort").value = "2101";
+      if (clearSelection) $("rtkSourceSelect").value = "";
+    }
+
+    function fillRtkSourceForm(source) {
+      if (!source) return;
+      $("rtkSourceId").value         = source.id || "";
+      $("rtkSourceLabel").value      = source.label || "";
+      $("rtkSourceHost").value       = source.host || "";
+      $("rtkSourcePort").value       = source.port ? String(source.port) : "2101";
+      $("rtkSourceMountpoint").value = source.mountpoint || "";
+      $("rtkSourceUsername").value   = "";
+      $("rtkSourcePassword").value   = "";
+    }
+
+    function syncRtkSourceFormFromSelection() {
+      const source = selectedRtkSourceRecord();
+      if (source) fillRtkSourceForm(source);
+    }
+
+    function slugifyRtkSourceId(text) {
+      return String(text || "").trim().toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    }
+
+    function parseNtripUrlIntoForm() {
+      const raw = $("rtkUrl").value.trim();
+      if (!raw) { setRtkSourceEditState("Falta URL NTRIP", "status-warn"); return; }
+      try {
+        const url = new URL(raw);
+        if (url.protocol !== "ntrip:") throw new Error("La URL debe empezar con ntrip://");
+        const mountpoint = url.pathname.replace(/^\/+/, "").trim();
+        if (!url.hostname || !mountpoint) throw new Error("La URL necesita host y mountpoint");
+        $("rtkSourceId").value         = $("rtkSourceId").value.trim() || slugifyRtkSourceId(mountpoint || url.hostname);
+        $("rtkSourceLabel").value      = $("rtkSourceLabel").value.trim() || mountpoint;
+        $("rtkSourceHost").value       = url.hostname;
+        $("rtkSourcePort").value       = url.port || "2101";
+        $("rtkSourceMountpoint").value = mountpoint;
+        $("rtkSourceUsername").value   = decodeURIComponent(url.username || "");
+        $("rtkSourcePassword").value   = decodeURIComponent(url.password || "");
+        setRtkSourceEditState("URL NTRIP cargada", "status-ok");
+      } catch (err) {
+        setRtkSourceEditState(err.message || "No se pudo parsear la URL NTRIP", "status-bad");
+      }
+    }
+
+    function collectRtkSourceFormPayload() {
+      const payload = {
+        id:         $("rtkSourceId").value.trim(),
+        label:      $("rtkSourceLabel").value.trim(),
+        host:       $("rtkSourceHost").value.trim(),
+        port:       $("rtkSourcePort").value.trim(),
+        mountpoint: $("rtkSourceMountpoint").value.trim(),
+        username:   $("rtkSourceUsername").value.trim(),
+        password:   $("rtkSourcePassword").value,
+      };
+      if (!payload.id) throw new Error("Falta ID de base");
+      if (!payload.label) payload.label = payload.id;
+      if (!payload.port) payload.port = 2101;
+      const parsedPort = Number(payload.port);
+      if (!Number.isFinite(parsedPort) || parsedPort <= 0) throw new Error("Puerto invalido");
+      payload.port = parsedPort;
+      return payload;
+    }
+
+    async function saveRtkSource(activate = false) {
+      let payload;
+      try { payload = collectRtkSourceFormPayload(); }
+      catch (err) { setRtkSourceEditState(err.message || "Formulario incompleto", "status-warn"); return; }
+
+      setRtkSourceEditState("Guardando...", "status-warn");
+      try {
+        const response = await fetch(`${sensorsHttpBase()}/rtk/sources`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...payload, activate }),
+        });
+        const body = await response.json().catch(() => ({}));
+        if (!response.ok || body.ok === false) {
+          setRtkSourceEditState(body.error || "No se pudo guardar la base", "status-bad"); return;
+        }
+        await sleepMs(600);
+        await fetchRtkCatalog();
+        if (!state.rtkSources.some((s) => s.id === payload.id)) {
+          setRtkSourceEditState((state.rtkSourceState && state.rtkSourceState.last_error) || "La base no quedo guardada", "status-bad"); return;
+        }
+        $("rtkSourceSelect").value = payload.id;
+        syncRtkSourceFormFromSelection();
+        if (activate) await applySelectedRtkSource();
+        setRtkSourceEditState(activate ? "Base guardada y activada" : "Base guardada", "status-ok");
+      } catch (_err) { setRtkSourceEditState("No se pudo hablar con sensores_web", "status-bad"); }
+    }
+
+    async function deleteRtkSource() {
+      const sourceId = $("rtkSourceId").value.trim() || $("rtkSourceSelect").value.trim();
+      if (!sourceId) { setRtkSourceEditState("No hay base seleccionada para borrar", "status-warn"); return; }
+      if (!window.confirm(`Borrar la base RTK "${sourceId}"?`)) return;
+
+      setRtkSourceEditState("Borrando...", "status-warn");
+      try {
+        const response = await fetch(`${sensorsHttpBase()}/rtk/sources/${encodeURIComponent(sourceId)}`, { method: "DELETE" });
+        const body = await response.json().catch(() => ({}));
+        if (!response.ok || body.ok === false) {
+          setRtkSourceEditState(body.error || "No se pudo borrar la base", "status-bad"); return;
+        }
+        clearRtkSourceForm(true);
+        await sleepMs(600);
+        await fetchRtkCatalog();
+        if (state.rtkSources.some((s) => s.id === sourceId)) {
+          setRtkSourceEditState((state.rtkSourceState && state.rtkSourceState.last_error) || "La base no se pudo borrar", "status-bad"); return;
+        }
+        setRtkSourceEditState("Base borrada", "status-ok");
+      } catch (_err) { setRtkSourceEditState("No se pudo hablar con sensores_web", "status-bad"); }
+    }
+
+    async function fetchRtkCatalog() {
+      try {
+        const r = await fetch(`${sensorsHttpBase()}/rtk/sources`, { cache: "no-store" });
+        if (!r.ok) return;
+        const p = await r.json();
+        state.rtkSources = Array.isArray(p.sources) ? p.sources : [];
+        renderRtkSources();
+      } catch (_err) {}
+      try {
+        const r = await fetch(`${sensorsHttpBase()}/rtk/status`, { cache: "no-store" });
+        if (!r.ok) return;
+        state.rtkSourceState = await r.json();
+        renderRtkSources();
+      } catch (_err) {}
+    }
+
+    async function applySelectedRtkSource() {
+      const sourceId = $("rtkSourceSelect").value;
+      if (!sourceId) return;
+      $("rtkSourceStateSub").textContent = "Enviando cambio...";
+      try {
+        const response = await fetch(`${sensorsHttpBase()}/rtk/source`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: sourceId }),
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (response.ok) {
+          state.rtkSourceState = payload.state || { active_source_id: sourceId, active_source_label: sourceId, connected: false };
+          renderRtkSources();
+          stampNow();
+        } else {
+          $("rtkSourceStateSub").textContent = payload.error || "No se pudo cambiar la base";
+        }
+      } catch (_err) { $("rtkSourceStateSub").textContent = "No se pudo hablar con sensores_web"; }
+    }
+
+    function gpsStatusName(status) {
+      switch (status) {
+        case -1: return "Sin fix";   case 0: return "Fix GPS";
+        case 1:  return "SBAS";      case 2: return "GBAS / DGPS";
+        default: return "Desconocido";
+      }
+    }
+
+    function gpsPrecisionText(status) {
+      switch (status) {
+        case 2:  return { title: "Diferencial", sub: "NavSatFix marca correccion diferencial o GBAS." };
+        case 1:  return { title: "Mejorado", sub: "NavSatFix marca SBAS." };
+        case 0:  return { title: "GPS normal", sub: "Sin RTK detallado expuesto aqui." };
+        case -1: return { title: "Sin fix", sub: "No hay posicion valida." };
+        default: return { title: "No disponible", sub: "Sin metadata de precision." };
+      }
+    }
+
+    function renderGps() {
+      const gps  = state.gps;
+      const meta = state.gpsMeta || {};
+
+      const fixTypeText = Number.isFinite(meta.fix_type)
+        ? `${meta.fix_type_name || "FIX"} (${meta.fix_type})`
+        : (gps ? gpsStatusName(gps.status) : "Sin datos");
+      $("fixTypeValue").textContent = fixTypeText;
+      $("fixTypeSub").textContent   = Number.isFinite(meta.satellites_visible)
+        ? `sat=${meta.satellites_visible} eph=${meta.eph ?? "-"} epv=${meta.epv ?? "-"}`
+        : (gps ? `service=${gps.service} frame=${gps.frame_id || "-"}` : "Sin metadata GPS.");
+
+      const fixBadge = $("fixBadge");
+      if (fixBadge && Number.isFinite(meta.fix_type)) {
+        const ft = meta.fix_type;
+        fixBadge.dataset.ft = ft >= 6 ? "fixed" : ft >= 5 ? "float" : ft >= 4 ? "dgps" : ft >= 3 ? "normal" : "nofix";
+      } else if (fixBadge) { fixBadge.dataset.ft = ""; }
+
+      $("rtkStatusValue").textContent = meta.rtk_status || "No disponible";
+      $("rtkStatusSub").textContent   = Number.isFinite(meta.rtcm_age_s)
+        ? `rtcm_age=${meta.rtcm_age_s.toFixed(2)} s count=${meta.rtcm_received_count ?? "-"}`
+        : "Sin datos RTCM.";
+
+      if (!gps) {
+        $("altValue").textContent              = "-";
+        $("precisionValue").textContent        = "No disponible";
+        $("precisionSub").textContent          = "-";
+        $("verticalPrecisionValue").textContent = "No disponible";
+        $("verticalPrecisionSub").textContent  = "-";
+        $("navSatRawValue").textContent        = "Sin datos";
+        $("navSatRawSub").textContent          = "-";
+        return;
+      }
+
+      $("altValue").textContent = Number.isFinite(gps.altitude) ? `${gps.altitude.toFixed(2)} m` : "-";
+      const cov    = Array.isArray(gps.position_covariance) ? gps.position_covariance : [];
+      const varH   = Number(cov[0]);
+      const varV   = Number(cov[8]);
+      const sigmaH = Number.isFinite(varH) && varH >= 0 ? Math.sqrt(varH) : null;
+      const sigmaV = Number.isFinite(varV) && varV >= 0 ? Math.sqrt(varV) : null;
+
+      $("precisionValue").textContent        = Number.isFinite(sigmaH) ? `${(sigmaH * 100).toFixed(1)} cm` : "No disponible";
+      $("precisionSub").textContent          = Number.isFinite(varH)   ? `var_h=${varH.toExponential(3)} m²` : "Sin covariance H.";
+      $("verticalPrecisionValue").textContent = Number.isFinite(sigmaV) ? `${(sigmaV * 100).toFixed(1)} cm` : "No disponible";
+      $("verticalPrecisionSub").textContent  = Number.isFinite(varV)   ? `var_v=${varV.toExponential(3)} m²` : "Sin covariance V.";
+      $("navSatRawValue").textContent        = gpsStatusName(gps.status);
+      $("navSatRawSub").textContent          = `status=${gps.status} service=${gps.service} cov_type=${gps.position_covariance_type}`;
+
+      if (Number.isFinite(gps.latitude) && Number.isFinite(gps.longitude)) {
+        state.lat = gps.latitude;
+        state.lon = gps.longitude;
+        renderPose();
+      }
+    }
+
+    function handlePoseMessage(msg) {
+      let pose = null;
+      if (msg.op === "robot_pose" && msg.pose)               pose = msg.pose;
+      else if (msg.op === "state" && msg.robot_pose)         pose = msg.robot_pose;
+      else if (msg.op === "nav_telemetry" && msg.robot_pose) pose = msg.robot_pose;
+      if (!pose) return;
+      if (Number.isFinite(Number(pose.lat)) && Number.isFinite(Number(pose.lon))) {
+        state.lat = Number(pose.lat); state.lon = Number(pose.lon);
+      }
+      if (Number.isFinite(Number(pose.heading_deg))) state.headingDeg = Number(pose.heading_deg);
+      renderPose();
+      stampNow();
+    }
+
+    function connectPoseWs(host, port) {
+      if (state.poseWs) state.poseWs.close();
+      const ws = new WebSocket(`ws://${host}:${port}`);
+      state.poseWs = ws;
+      setStatus("poseState", "Conectando", "status-warn");
+      ws.onopen    = () => { setStatus("poseState", "Conectado", "status-ok"); ws.send(JSON.stringify({ op: "get_state" })); };
+      ws.onmessage = (e) => { try { handlePoseMessage(JSON.parse(e.data)); } catch (_) {} };
+      ws.onerror   = () => setStatus("poseState", "Error", "status-bad");
+      ws.onclose   = () => setStatus("poseState", "Desconectado", "status-bad");
+    }
+
+    function connectSensorsWs(host, port) {
+      if (state.sensorsWs) state.sensorsWs.close();
+      const ws = new WebSocket(`ws://${host}:${port}/ws`);
+      state.sensorsWs = ws;
+      setStatus("sensorsState", "Conectando", "status-warn");
+      ws.onopen = () => setStatus("sensorsState", "Conectado", "status-ok");
+      ws.onmessage = (e) => {
+        try {
+          const payload = JSON.parse(e.data);
+          if (payload) {
+            state.gps            = payload.gps || null;
+            state.gpsMeta        = payload.gps_meta || null;
+            state.rtkSources     = Array.isArray(payload.rtk_sources) ? payload.rtk_sources : state.rtkSources;
+            state.rtkSourceState = payload.rtk_source_state || state.rtkSourceState;
+            renderGps();
+            renderRtkSources();
+            stampNow();
+          }
+          if (payload && payload.odom && Number.isFinite(payload.odom.yaw_enu_deg)) {
+            state.headingDeg = Number(payload.odom.yaw_enu_deg);
+            renderPose();
+          }
+        } catch (_) {}
+      };
+      ws.onerror = () => setStatus("sensorsState", "No disponible", "status-warn");
+      ws.onclose = () => { if (state.sensorsWs === ws) setStatus("sensorsState", "No disponible", "status-warn"); };
+    }
+
+    $("connectBtn").addEventListener("click", () => {
+      const host        = $("host").value.trim() || "100.111.4.7";
+      const posePort    = $("posePort").value.trim() || "8766";
+      const sensorsPort = $("sensorsPort").value.trim() || "8001";
+      connectPoseWs(host, posePort);
+      connectSensorsWs(host, sensorsPort);
+      fetchRtkCatalog();
+    });
+
+    $("disconnectBtn").addEventListener("click", () => {
+      if (state.poseWs)    state.poseWs.close();
+      if (state.sensorsWs) state.sensorsWs.close();
+    });
+
+    $("mapMode").addEventListener("change", (e) => { state.mapMode = e.target.value; updateMapsLink(true); });
+    $("loadSourcesBtn").addEventListener("click",    () => fetchRtkCatalog());
+    $("applySourceBtn").addEventListener("click",    () => applySelectedRtkSource());
+    $("rtkSourceSelect").addEventListener("change",  () => syncRtkSourceFormFromSelection());
+    $("parseRtkUrlBtn").addEventListener("click",    () => parseNtripUrlIntoForm());
+    $("saveSourceBtn").addEventListener("click",     () => saveRtkSource(false));
+    $("saveActivateSourceBtn").addEventListener("click", () => saveRtkSource(true));
+    $("deleteSourceBtn").addEventListener("click",   () => deleteRtkSource());
+    $("clearSourceFormBtn").addEventListener("click", () => {
+      clearRtkSourceForm(false);
+      setRtkSourceEditState("Formulario limpio", "status-warn");
+    });
+
+    updateMapsLink(true);
+    renderRtkSources();
+  </script>
+</body>
+</html>

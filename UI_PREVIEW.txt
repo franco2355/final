@@ -1,0 +1,171 @@
+╔═════════════════════════════════════════════════════════════════════════════╗
+║               🎨 PREVIEW VISUAL DE LA INTERFAZ EN EL NAVEGADOR              ║
+╚═════════════════════════════════════════════════════════════════════════════╝
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ Mozilla Firefox    ⬜ ⬜ ⬜ ⊞ ✕                                               │
+│ file:///home/franco/german/aeye-ros-workspace/src/map_tools/web/index.html │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ PANEL IZQUIERDO (360px)                          │  MAPA (resto)              ┃
+┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╋━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃                                                  │                            ┃
+┃  ─ CONNECTION ───────────────────────────────────┤                            ┃
+┃  │ ws://127.0.0.1:8765            ░░░░░░░░░░  │   🗺️  Leaflet Map           ┃
+┃  │                                            │                            ┃
+┃  │ [  CONNECT  ] [ DISCONNECT ]              │                            ┃
+┃  │                                            │                            ┃
+┃  │ ✓ Connected to ws://127.0.0.1:8765        │   🔵 Robot Position       ┃
+┃  │                                            │  (blue circle)            ┃
+┃  │                                            │                            ┃
+┃  ─ ZONES ──────────────────────────────────────┤   🟠 No-Go Zone          ┃
+┃  │ [ REFRESH ] [ SAVE FILE ] [ LOAD FILE ]   │  (orange polygon)        ┃
+┃  │ [ PUSH TO SERVER ] [ CLEAR ALL ]          │                            ┃
+┃  │ [✓] Auto-sync edits                       │                            ┃
+┃  │                                            │                            ┃
+┃  │ Zone List:                                 │   🔴 Goal Marker         ┃
+┃  │ ┌──────────────────────────────────────┐  │  (red circle) ← NEW!    ┃
+┃  │ │ zone_1 (no_go)    ☒ enabled         │  │                            ┃
+┃  │ │ zone_2 (no_go)    ☒ enabled         │  │  [OSM / Satellite] [+][-]  ┃
+┃  │ │ zone_3 (no_go)    ☒ enabled         │  │                            ┃
+┃  │ └──────────────────────────────────────┘  │                            ┃
+┃  │                                            │                            ┃
+┃  ─ NAVIGATION ─────────────────────────────────┤                            ┃
+┃  │                                      ← NEW!│                            ┃
+┃  │ [ Set Goal (click map) ] [ Cancel Goal ]  │                            ┃
+┃  │                                            │                            ┃
+┃  │ No active goal                             │                            ┃
+┃  │                                            │                            ┃
+┃  ─ CURRENT DOCUMENT (lat/lon) ─────────────────┤                            ┃
+┃  │ {                                          │                            ┃
+┃  │   "frame_id": "map",                      │                            ┃
+┃  │   "zones": [...]                          │                            ┃
+┃  │ }                                          │                            ┃
+┃  │                                            │                            ┃
+┃  ─ EVENTS ─────────────────────────────────────┤                            ┃
+┃  │ [2025-03-04T10:30:45][rx] {"op":"state"   │                            ┃
+┃  │ [2025-03-04T10:30:46][tx] {"op":"get_sta  │                            ┃
+┃  │ [2025-03-04T10:30:47][rx] {"op":"robot_p │                            ┃
+┃  │                                            │                            ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+
+CUANDO ESTÁS EN MODO GOAL:
+═════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+┃ PANEL IZQUIERDO                                  │  MAPA                      ┃
+┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╋━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃                                                  │                            ┃
+┃  ─ NAVIGATION ─────────────────────────────────┤  Cursor: ⊕ crosshair       ┃
+┃  │                                            │                            ┃
+┃  │ ╔════════════════════════════════════════╗ │                            ┃
+┃  │ ║ Set Goal (click map) — ACTIVE   ║    ║ │                            ┃
+┃  │ ║ (Botón ROJO)                     ║    ║ │  Click aquí para poner    ┃
+┃  │ ╠════════════════════════════════════════╣ │  el goal                  ┃
+┃  │ ║ [ Cancel Goal ]                   ║    ║ │                            ┃
+┃  │ ╚════════════════════════════════════════╝ │                            ┃
+┃  │                                            │                            ┃
+┃  │ No active goal                             │                            ┃
+┃  │                                            │                            ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+
+DESPUÉS DE CLICKEAR EN EL MAPA:
+═════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+┃ PANEL IZQUIERDO                                  │  MAPA                      ┃
+┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╋━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃                                                  │  🔵 Robot Position        ┃
+┃  ─ NAVIGATION ─────────────────────────────────┤                            ┃
+┃  │                                            │  🔴 Goal Marker          ┃
+┃  │ [ Set Goal (click map) ]  [ Cancel Goal ] │  (rojo con borde blanco)  ┃
+┃  │ (Botón vuelve a gris)                     │                            ┃
+┃  │                                            │                            ┃
+┃  │ Goal sent — navigating... ✅              │  Cursor: normal           ┃
+┃  │ (texto en verde)                          │                            ┃
+┃  │                                            │                            ┃
+┃  │                                            │  🟠 No-Go Zone           ┃
+┃  │                                            │  (a evitar)               ┃
+┃  │                                            │                            ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+
+SI HAY ERROR (Nav2 no disponible):
+═════════════════════════════════════════════════════════════════════════════
+
+┃  ─ NAVIGATION ─────────────────────────────────┤
+┃  │                                            │
+┃  │ [ Set Goal (click map) ]  [ Cancel Goal ] │
+┃  │                                            │
+┃  │ Goal failed: NavigateToPose action...  ❌ │
+┃  │ (texto en rojo)                           │
+┃  │                                            │
+
+
+MIENTRAS NAVEGA:
+═════════════════════════════════════════════════════════════════════════════
+
+┃  ─ NAVIGATION ─────────────────────────────────┤
+┃  │                                            │
+┃  │ [ Set Goal (click map) ]  [ Cancel Goal ] │
+┃  │                                            │
+┃  │ Goal sent — navigating... ✅              │
+┃  │                                            │
+┃  │ Panel Events muestra updates de GPS @ 1Hz │
+┃  │                                            │
+
+
+DESPUÉS DE CANCELAR:
+═════════════════════════════════════════════════════════════════════════════
+
+┃  ─ NAVIGATION ─────────────────────────────────┤
+┃  │                                            │
+┃  │ [ Set Goal (click map) ]  [ Cancel Goal ] │
+┃  │                                            │
+┃  │ Goal cancelled                             │
+┃  │ (Sin color, el marcador 🔴 desapareció)  │
+
+
+COLORS EN LA INTERFAZ:
+═════════════════════════════════════════════════════════════════════════════
+
+🔵 Robot:      Azul (círculo, actualiza cada 1s)
+🔴 Goal:       Rojo con borde blanco (aparece al clickear)
+🟠 No-Go:      Naranja (polígonos de zonas prohibidas)
+✅ Éxito:      Verde ("Goal sent — navigating...")
+❌ Error:      Rojo ("Goal failed: ...")
+🔘 Botón:      Gris → Rojo cuando está activo (ACTIVE)
+
+
+INTERACTION FLOW:
+═════════════════════════════════════════════════════════════════════════════
+
+Usuario                        Navegador                      Servidor ROS2
+  │                                │                                │
+  ├─ Clica "Set Goal" ─────────────→│                                │
+  │                                ├─ Botón rojo                     │
+  │                                ├─ Cursor crosshair               │
+  │                                │                                │
+  ├─ Clica en mapa ────────────────→│                                │
+  │                                ├─ Marker rojo                    │
+  │                                ├─ send: set_goal_ll ────────────→│
+  │                                │                                ├─ Convert lat/lon
+  │                                │                ← ack {ok: true}─┤
+  │                                ├─ Status: Goal sent ✅           │
+  │                                │                                ├─ Nav2: send_goal
+  │                                │                                │
+  │                           [Navegando...]                         │
+  │                           (GPS @ 1Hz)                            │
+  │                                │                                ├─ Moving...
+  │                                │                                │
+  ├─ Clica "Cancel Goal" ──────────→│                                │
+  │                                ├─ send: cancel_goal ───────────→│
+  │                                │                                ├─ Cancel goal
+  │                                │                ← ack {ok: true}─┤
+  │                                ├─ Status: Goal cancelled         │
+  │                                ├─ Marker se elimina              │
+  │                                │                                │
+

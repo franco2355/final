@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuatri - Ubicacion actual</title>
+    <style>
+        :root {
+            --bg-top: #f7efe2;
+            --bg-bottom: #0d2e36;
+            --card: rgba(255, 252, 247, 0.88);
+            --card-strong: rgba(255, 252, 247, 0.96);
+            --ink: #102126;
+            --muted: #4f666c;
+            --accent: #c86f3a;
+            --accent-dark: #84431d;
+            --good: #1f8a4c;
+            --line: rgba(16, 33, 38, 0.12);
+            --shadow: 0 24px 60px rgba(7, 18, 22, 0.22);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+            color: var(--ink);
+            background:
+                radial-gradient(circle at top left, rgba(255, 210, 170, 0.75), transparent 32%),
+                radial-gradient(circle at top right, rgba(43, 118, 132, 0.18), transparent 28%),
+                linear-gradient(180deg, var(--bg-top) 0%, #e3dfd4 38%, var(--bg-bottom) 100%);
+            padding: 28px;
+        }
+
+        .shell {
+            max-width: 1280px;
+            margin: 0 auto;
+        }
+
+        .hero {
+            display: grid;
+            grid-template-columns: 1.15fr 0.85fr;
+            gap: 24px;
+            align-items: stretch;
+        }
+
+        .panel {
+            background: var(--card);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.55);
+            border-radius: 28px;
+            box-shadow: var(--shadow);
+        }
+
+        .headline {
+            padding: 32px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 320px;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            width: fit-content;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            border-radius: 999px;
+            background: rgba(31, 138, 76, 0.12);
+            color: var(--good);
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            font-size: 0.82rem;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            background: currentColor;
+            box-shadow: 0 0 0 6px rgba(31, 138, 76, 0.16);
+        }
+
+        h1 {
+            margin: 18px 0 10px;
+            font-size: clamp(2.6rem, 5vw, 4.6rem);
+            line-height: 0.92;
+            letter-spacing: -0.05em;
+        }
+
+        .subline {
+            margin: 0;
+            max-width: 42rem;
+            color: var(--muted);
+            font-size: 1.02rem;
+            line-height: 1.6;
+        }
+
+        .meta-strip {
+            margin-top: 28px;
+            padding-top: 18px;
+            border-top: 1px solid var(--line);
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .meta-cell {
+            display: grid;
+            gap: 4px;
+        }
+
+        .meta-label {
+            font-size: 0.8rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .meta-value {
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .snapshot {
+            padding: 26px;
+            display: grid;
+            gap: 16px;
+            align-content: start;
+        }
+
+        .snapshot-card {
+            background: var(--card-strong);
+            border: 1px solid rgba(16, 33, 38, 0.08);
+            border-radius: 22px;
+            padding: 18px 18px 16px;
+        }
+
+        .snapshot-card h2 {
+            margin: 0 0 12px;
+            font-size: 0.86rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .fix {
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: -0.04em;
+        }
+
+        .fix-note {
+            margin-top: 8px;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .stat {
+            padding: 14px;
+            border-radius: 18px;
+            background: rgba(200, 111, 58, 0.08);
+        }
+
+        .stat-label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 0.75rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .stat-value {
+            font-size: 1.3rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+        }
+
+        .layout {
+            margin-top: 24px;
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 24px;
+        }
+
+        .map-panel {
+            overflow: hidden;
+            position: relative;
+        }
+
+        iframe {
+            display: block;
+            width: 100%;
+            height: 560px;
+            border: 0;
+            background: #d8ddd7;
+        }
+
+        .map-caption {
+            position: absolute;
+            left: 18px;
+            bottom: 18px;
+            padding: 14px 16px;
+            border-radius: 18px;
+            background: rgba(255, 252, 247, 0.92);
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+            max-width: 320px;
+        }
+
+        .map-caption strong {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.92rem;
+        }
+
+        .map-caption span {
+            color: var(--muted);
+            font-size: 0.92rem;
+            line-height: 1.5;
+        }
+
+        .detail-panel {
+            padding: 26px;
+            display: grid;
+            gap: 16px;
+            align-content: start;
+        }
+
+        .coords {
+            display: grid;
+            gap: 12px;
+        }
+
+        .coord-box {
+            padding: 18px;
+            border-radius: 20px;
+            background: var(--card-strong);
+            border: 1px solid rgba(16, 33, 38, 0.08);
+        }
+
+        .coord-label {
+            margin-bottom: 8px;
+            font-size: 0.76rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .coord-value {
+            font-family: "IBM Plex Mono", "Courier New", monospace;
+            font-size: clamp(1.1rem, 2.4vw, 1.55rem);
+            font-weight: 700;
+            line-height: 1.35;
+        }
+
+        .coord-extra {
+            margin-top: 8px;
+            color: var(--muted);
+            font-size: 0.92rem;
+        }
+
+        .links {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .link-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 14px 16px;
+            border-radius: 18px;
+            text-decoration: none;
+            font-weight: 700;
+            color: white;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
+            box-shadow: 0 12px 24px rgba(132, 67, 29, 0.24);
+        }
+
+        .link-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .notes {
+            padding: 18px;
+            border-radius: 20px;
+            background: rgba(13, 46, 54, 0.06);
+            color: var(--muted);
+            line-height: 1.65;
+        }
+
+        .notes strong {
+            color: var(--ink);
+        }
+
+        @media (max-width: 1080px) {
+            .hero,
+            .layout {
+                grid-template-columns: 1fr;
+            }
+
+            iframe {
+                height: 440px;
+            }
+        }
+
+        @media (max-width: 720px) {
+            body {
+                padding: 16px;
+            }
+
+            .headline,
+            .snapshot,
+            .detail-panel {
+                padding: 20px;
+            }
+
+            .meta-strip,
+            .stat-grid,
+            .links {
+                grid-template-columns: 1fr;
+            }
+
+            iframe {
+                height: 360px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="shell">
+        <section class="hero">
+            <article class="panel headline">
+                <div>
+                    <div class="eyebrow">
+                        <span class="dot"></span>
+                        Telemetria en vivo
+                    </div>
+                    <h1>Mapa live del cuatri</h1>
+                    <p class="subline">
+                        Esta pagina escucha la telemetria viva desde <code>sensores_web</code>
+                        a traves de un relay local. Si hay datos, centra el mapa en el ultimo <code>/gps/fix</code>
+                        recibido. Si no hay datos, marca la desconexion y no se queda mintiendo
+                        con una coordenada fija.
+                    </p>
+                </div>
+
+                <div class="meta-strip">
+                    <div class="meta-cell">
+                        <span class="meta-label">Fuente live</span>
+                        <span class="meta-value" id="ws-status"></span>
+                    </div>
+                    <div class="meta-cell">
+                        <span class="meta-label">Ultima actualizacion</span>
+                        <span class="meta-value" id="captured-at"></span>
+                    </div>
+                    <div class="meta-cell">
+                        <span class="meta-label">ROS stamp</span>
+                        <span class="meta-value" id="ros-stamp"></span>
+                    </div>
+                </div>
+            </article>
+
+            <aside class="panel snapshot">
+                <div class="snapshot-card">
+                    <h2>Estado live</h2>
+                    <div class="fix" id="fix-status"></div>
+                    <div class="fix-note" id="status-note"></div>
+                </div>
+
+                <div class="stat-grid">
+                    <div class="stat">
+                        <span class="stat-label">GPS topic</span>
+                        <span class="stat-value" id="gps-topic"></span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">IMU topic</span>
+                        <span class="stat-value" id="imu-topic"></span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Velocity topic</span>
+                        <span class="stat-value" id="velocity-topic"></span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Odom topic</span>
+                        <span class="stat-value" id="odom-topic"></span>
+                    </div>
+                </div>
+            </aside>
+        </section>
+
+        <section class="layout">
+            <article class="panel map-panel">
+                <iframe id="osm-frame" title="Mapa OpenStreetMap"></iframe>
+                <div class="map-caption">
+                    <strong>Punto centrado en el ultimo /gps/fix recibido</strong>
+                    <span>
+                        Si el mapa no carga por red, usa los botones de abajo. Si la telemetria
+                        se corta, la pagina lo muestra en vez de dejar una posicion vieja.
+                    </span>
+                </div>
+            </article>
+
+            <aside class="panel detail-panel">
+                <div class="coords">
+                    <div class="coord-box">
+                        <div class="coord-label">Latitud / Longitud</div>
+                        <div class="coord-value" id="lat-lon"></div>
+                        <div class="coord-extra" id="dms"></div>
+                    </div>
+
+                    <div class="coord-box">
+                        <div class="coord-label">Estado bruto</div>
+                        <div class="coord-value" id="raw-status"></div>
+                        <div class="coord-extra">
+                            GPS status: <span id="navsat-status"></span> |
+                            topics: <span id="covariance-type"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="links">
+                    <a class="link-btn" id="osm-link" target="_blank" rel="noreferrer">Abrir OSM</a>
+                    <a class="link-btn" id="google-link" target="_blank" rel="noreferrer">Abrir Google</a>
+                    <a class="link-btn" id="apple-link" target="_blank" rel="noreferrer">Abrir Apple</a>
+                </div>
+
+                <div class="notes">
+                    <strong>Sin coordenada hardcodeada.</strong> Esta vista usa
+                    <code>http://127.0.0.1:8010/data</code> por defecto. Si <code>sensores_web</code>
+                    no esta levantado o MAVROS no publica, lo vas a ver aca enseguida.
+                    Ultimo punto valido:
+                    lat <span id="lat-inline"></span>, lon <span id="lon-inline"></span>.
+                </div>
+            </aside>
+        </section>
+    </div>
+
+    <script>
+        const DEFAULT_DATA_URL = "http://127.0.0.1:8010/data";
+        const query = new URLSearchParams(window.location.search);
+        const dataUrl = query.get("data") || (
+            window.location.protocol === "http:" || window.location.protocol === "https:"
+                ? `${window.location.protocol}//127.0.0.1:8010/data`
+                : DEFAULT_DATA_URL
+        );
+        const lastKnown = {
+            latitude: null,
+            longitude: null,
+        };
+
+        function toDms(value, positiveLabel, negativeLabel) {
+            if (!Number.isFinite(value)) {
+                return "Sin dato";
+            }
+            const absolute = Math.abs(value);
+            const degrees = Math.floor(absolute);
+            const minutesFloat = (absolute - degrees) * 60;
+            const minutes = Math.floor(minutesFloat);
+            const seconds = ((minutesFloat - minutes) * 60).toFixed(2);
+            const suffix = value >= 0 ? positiveLabel : negativeLabel;
+            return `${degrees} deg ${minutes} min ${seconds} s ${suffix}`;
+        }
+
+        function setText(id, value) {
+            document.getElementById(id).textContent = value;
+        }
+
+        function setLinksDisabled() {
+            document.getElementById("osm-frame").src = "about:blank";
+            document.getElementById("osm-link").removeAttribute("href");
+            document.getElementById("google-link").removeAttribute("href");
+            document.getElementById("apple-link").removeAttribute("href");
+        }
+
+        function renderMap(lat, lon) {
+            const delta = 0.00012;
+            const bbox = [
+                (lon - delta).toFixed(6),
+                (lat - delta).toFixed(6),
+                (lon + delta).toFixed(6),
+                (lat + delta).toFixed(6)
+            ].join(",");
+
+            const osmEmbed = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lon}`;
+            const osmLink = `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=20/${lat}/${lon}`;
+            const googleLink = `https://www.google.com/maps?q=${lat},${lon}&z=21`;
+            const appleLink = `https://maps.apple.com/?ll=${lat},${lon}&z=20&q=Cuatri`;
+
+            document.getElementById("osm-frame").src = osmEmbed;
+            document.getElementById("osm-link").href = osmLink;
+            document.getElementById("google-link").href = googleLink;
+            document.getElementById("apple-link").href = appleLink;
+        }
+
+        function navSatStatusName(value) {
+            const map = {
+                "-1": "NO_FIX",
+                "0": "FIX",
+                "1": "SBAS_FIX",
+                "2": "GBAS_FIX"
+            };
+            return map[String(value)] || "UNKNOWN";
+        }
+
+        function topicState(payload, key) {
+            return payload && payload[key] ? "OK" : "SIN DATO";
+        }
+
+        function formatTopics(payload) {
+            if (!payload || !payload.topics) {
+                return "Sin bindings";
+            }
+            return Object.entries(payload.topics)
+                .map(([key, value]) => `${key}=${value}`)
+                .join(" | ");
+        }
+
+        function renderDisconnected(reason) {
+            setText("ws-status", `Desconectado (${reason})`);
+            setText("captured-at", "Sin actualizacion");
+            setText("ros-stamp", "Sin dato");
+            setText("fix-status", "Sin telemetria viva");
+            setText("status-note", `Esperando datos desde ${dataUrl}`);
+            setText("gps-topic", "SIN DATO");
+            setText("imu-topic", "SIN DATO");
+            setText("velocity-topic", "SIN DATO");
+            setText("odom-topic", "SIN DATO");
+            setText("raw-status", "MAVROS sin publicaciones");
+            setText("navsat-status", "Sin dato");
+            setText("covariance-type", "Sin bindings");
+            if (Number.isFinite(lastKnown.latitude) && Number.isFinite(lastKnown.longitude)) {
+                setText("lat-inline", lastKnown.latitude.toFixed(7));
+                setText("lon-inline", lastKnown.longitude.toFixed(7));
+            } else {
+                setText("lat-lon", "Sin GPS vivo");
+                setText("dms", "Sin dato");
+                setText("lat-inline", "Sin dato");
+                setText("lon-inline", "Sin dato");
+                setLinksDisabled();
+            }
+        }
+
+        function renderPayload(payload) {
+            const gps = payload && payload.gps ? payload.gps : null;
+            const hasGps = gps && Number.isFinite(gps.latitude) && Number.isFinite(gps.longitude);
+            const liveNow = new Date().toLocaleString("es-AR");
+
+            setText("ws-status", "Conectado");
+            setText("captured-at", liveNow);
+            setText("ros-stamp", gps && Number.isFinite(gps.stamp) ? gps.stamp.toFixed(3) : "Sin dato");
+            setText("gps-topic", topicState(payload, "gps"));
+            setText("imu-topic", topicState(payload, "imu"));
+            setText("velocity-topic", topicState(payload, "velocity"));
+            setText("odom-topic", topicState(payload, "odom"));
+
+            if (hasGps) {
+                const lat = gps.latitude;
+                const lon = gps.longitude;
+                lastKnown.latitude = lat;
+                lastKnown.longitude = lon;
+
+                renderMap(lat, lon);
+                setText("fix-status", "GPS LIVE");
+                setText("status-note", `MAVROS publica GPS/IMU/velocity/odom segun disponibilidad. Altitud=${gps.altitude.toFixed(2)} m.`);
+                setText("lat-lon", `${lat.toFixed(7)}, ${lon.toFixed(7)}`);
+                setText("dms", `${toDms(lat, "N", "S")} | ${toDms(lon, "E", "W")}`);
+                setText("lat-inline", lat.toFixed(7));
+                setText("lon-inline", lon.toFixed(7));
+                setText("raw-status", "MAVROS publicando");
+                setText("navsat-status", `${navSatStatusName(gps.status)} (${gps.status})`);
+            } else {
+                setText("fix-status", "Sin /gps/fix valido");
+                setText("status-note", "Hay conexion web, pero no llego una posicion GPS util.");
+                setText("lat-lon", "Sin GPS vivo");
+                setText("dms", "Sin dato");
+                setText("raw-status", "MAVROS parcial o sin GPS");
+                setText("navsat-status", "Sin dato");
+                setLinksDisabled();
+            }
+
+            setText("covariance-type", formatTopics(payload));
+        }
+
+        async function pollData() {
+            setText("ws-status", "Consultando...");
+            try {
+                const response = await fetch(dataUrl, { cache: "no-store" });
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                const payload = await response.json();
+                renderPayload(payload);
+            } catch (error) {
+                renderDisconnected(error.message || "sin relay");
+            } finally {
+                window.setTimeout(pollData, 1200);
+            }
+        }
+
+        renderDisconnected("esperando");
+        pollData();
+    </script>
+</body>
+</html>

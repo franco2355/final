@@ -1,0 +1,116 @@
+# [x_pos   , y_pos    , z_pos,
+#  roll    , pitch    , yaw,
+#  x_vel   , y_vel    , z_vel,
+#  roll_vel, pitch_vel, yaw_vel,
+#  x_accel , y_accel  , z_accel]
+
+ekf_filter_node_odom:
+  ros__parameters:
+    frequency: 30.0
+    two_d_mode: true
+    print_diagnostics: true
+    publish_tf: true
+    dynamic_process_noise_covariance: true
+    alpha: 0.001
+    beta: 2.0
+    kappa: 0.0
+
+    map_frame: map
+    odom_frame: odom
+    base_link_frame: base_footprint
+    world_frame: odom
+
+    odom0: /wheel/odometry
+    odom0_config: [false, false, false,
+                   false, false, false,
+                   true,  true,  false,
+                   false, false, false,
+                   false, false, false]
+    odom0_differential: false
+    odom0_relative: false
+
+    # odom1: /odometry/pixhawk
+    # odom1_config: [true, true, false,
+    #                false, false, false,
+    #                false, false, false,
+    #                false, false, false,
+    #                false, false, false]
+    # odom1_differential: false
+    # odom1_relative: false
+
+    imu0: /imu/data
+    imu0_config: [false, false, false,
+                  # true, true, true,
+                  false, false, true,
+                  false, false, false,
+                  false, false, true,
+                  # true, true, true]
+                  false, false, false]
+    imu0_differential: false
+    imu0_relative: false
+    imu0_remove_gravitational_acceleration: true
+
+ekf_filter_node_map:
+  ros__parameters:
+    frequency: 30.0
+    two_d_mode: true
+    print_diagnostics: true
+    publish_tf: true
+    dynamic_process_noise_covariance: true
+    alpha: 0.001
+    beta: 2.0
+    kappa: 0.0
+
+    map_frame: map
+    odom_frame: odom
+    base_link_frame: base_footprint
+    world_frame: map
+
+    imu0: /imu/data
+    imu0_config: [false, false, false,
+                  false, false, true,
+                  # true, true, true,
+                  false, false, false,
+                  false, false, true,
+                  false, false, false]
+                  # true, true, true]
+    imu0_differential: false
+    imu0_relative: false
+    imu0_remove_gravitational_acceleration: true
+
+    odom0: /odometry/local
+    # odom0: /wheel/odometry
+    odom0_config: [false, false, false,
+                   false, false, false,
+                   true,  true,  false,
+                   false, false, false,
+                   false, false, false]
+    odom0_differential: false
+    odom0_relative: false
+
+    odom1: /odometry/gps
+    odom1_config: [true, true, false,
+                   false, false, false,
+                   false, false, false,
+                   false, false, false,
+                   false, false, false]
+    odom1_differential: false
+    odom1_relative: false
+
+navsat_transform:
+  ros__parameters:
+    frequency: 30.0
+    magnetic_declination_radians: 0.0
+    yaw_offset: 0.0
+    zero_altitude: true
+    broadcast_utm_transform: false
+    publish_filtered_gps: true
+    use_odometry_yaw: false
+    wait_for_datum: true
+    # datum: [-31.4858037, -64.2410570, 0.0] # Ejemplo: hub de la UCC, Córdoba, Argentina
+    # datum: [-31.4858037, -64.2410570, 2.35619449019] # Ejemplo: hub de la UCC, Córdoba, Argentina
+
+    gps_topic: /gps/fix
+    # odom_topic: /wheel/odometry
+    odom_topic: /odometry/local
+    output_topic: /odometry/gps

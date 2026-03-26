@@ -1,0 +1,230 @@
+╔═════════════════════════════════════════════════════════════════════════════╗
+║                  GUÍA COMPLETA PARA EJECUTAR Y PROBAR                       ║
+╚═════════════════════════════════════════════════════════════════════════════╝
+
+🔧 PASO 1: COMPILAR EL PACKAGE
+═════════════════════════════════════════════════════════════════════════════
+
+Abre una terminal en tu robot/PC con el workspace:
+
+  $ cd ~/german/aeye-ros-workspace
+  $ source /opt/ros/jazzy/setup.bash  # O el nombre de tu distro (humble, iron, etc)
+  $ colcon build --packages-select map_tools
+
+Espera a que termine. Debería decir:
+  "Summary: 1 package finished [X.XXs]"
+
+Si hay errores, son de imports faltantes de ROS2 (que están en tu robot).
+
+
+🚀 PASO 2: LANZAR EL STACK
+═════════════════════════════════════════════════════════════════════════════
+
+En una NUEVA terminal (importante - no matamos la anterior):
+
+  $ cd ~/german/aeye-ros-workspace
+  $ source /opt/ros/jazzy/setup.bash
+  $ source install/setup.bash
+  $ ros2 launch robot real.launch.py
+
+Espera a ver:
+  "[web_zone_server-N] WebSocket server listening on ws://0.0.0.0:8765"
+
+Si ves errores sobre Nav2 o GPS, es normal si no tienes el stack completo.
+El código está listo, solo esperando los servicios/topics.
+
+
+🌐 PASO 3: ABRIR EL NAVEGADOR
+═════════════════════════════════════════════════════════════════════════════
+
+Opción A - En la misma PC (local):
+  1. Abre Firefox o Chrome
+  2. Pega en la URL:
+     file:///home/franco/german/aeye-ros-workspace/src/map_tools/web/index.html
+  3. Debería cargar la interfaz
+
+Opción B - Desde otra PC (si el robot es remoto):
+  1. Abre Firefox o Chrome
+  2. Pega en la URL:
+     file:///<ruta-local>/index.html
+  3. En el panel izquierdo, cambia la URL de WebSocket a:
+     ws://<IP-DEL-ROBOT>:8765
+
+
+✅ PASO 4: CONECTAR AL WEBSOCKET
+═════════════════════════════════════════════════════════════════════════════
+
+En el panel "Connection":
+
+  • Verifica que la URL sea correcta:
+    - Local: ws://127.0.0.1:8765
+    - Remoto: ws://<robot-ip>:8765
+
+  • Clica en [Connect]
+
+  • Deberías ver:
+    ✓ Connected to ws://...
+    ✓ El estado pasa a "state updated"
+    ✓ En el panel Events aparecen logs
+
+
+🔍 PASO 5: VERIFICAR GPS RATE-LIMITING (1Hz)
+═════════════════════════════════════════════════════════════════════════════
+
+Esto prueba que el rate-limiting está funcionando:
+
+  1. Abre la Consola del navegador (F12)
+  2. Selecciona la pestaña "Console"
+  3. Observa los timestamps en el panel "Events"
+
+Deberías ver algo así:
+  [2025-03-04T10:30:45.123Z][rx] {"op":"robot_pose",...}
+  [2025-03-04T10:30:46.125Z][rx] {"op":"robot_pose",...}  ← ~1 segundo después
+  [2025-03-04T10:30:47.124Z][rx] {"op":"robot_pose",...}  ← ~1 segundo después
+
+Si los timestamps están a 0.1s de diferencia, es porque es 10Hz (sin rate-limiting).
+
+
+🎯 PASO 6: PROBAR SET GOAL
+═════════════════════════════════════════════════════════════════════════════
+
+1. Panel "Navigation" → Clica [Set Goal (click map)]
+   • El botón debe ponerse ROJO
+   • El texto debe decir "Set Goal (click map) — ACTIVE"
+   • El cursor del mapa debe cambiar a "crosshair" ⊕
+
+2. Clica en UN PUNTO del mapa
+   • Debe aparecer un marcador 🔴 rojo en ese punto
+   • El botón vuelve a normal (gris)
+   • El cursor vuelve a normal
+
+3. En el panel "Navigation":
+   • Si todo está bien: 
+     "Goal sent — navigating..." ✅ (verde)
+   
+   • Si hay error (Nav2 no disponible, etc):
+     "Goal failed: <error>" ❌ (rojo)
+
+4. En otra terminal, verifica que Nav2 recibió el goal:
+   
+   $ ros2 topic echo /navigate_to_pose/_action/status
+   
+   Deberías ver GOAL_STATE_ACTIVE o similar
+
+
+🤖 PASO 7: PROBAR NAVEGACIÓN DEL ROBOT
+═════════════════════════════════════════════════════════════════════════════
+
+Si todo está conectado correctamente:
+
+  1. El robot debe empezar a moverse hacia el goal
+  2. Debe evitar las zonas no-go (naranja en el mapa)
+  3. La posición 🔵 (círculo azul) debe acercarse al goal 🔴
+
+Para monitorear:
+  $ ros2 topic echo /navigate_to_pose/_action/feedback
+
+
+❌ PASO 8: PROBAR CANCELACIÓN
+═════════════════════════════════════════════════════════════════════════════
+
+Mientras el robot está navegando:
+
+  1. En el navegador, clica [Cancel Goal]
+  2. El marcador 🔴 debe desaparecer del mapa
+  3. El estado debe cambiar a "Goal cancelled"
+  4. El robot debe detenerse
+
+Verifica:
+  $ ros2 action list | grep navigate_to_pose
+  
+  Debería NOT mostrar ningún goal activo
+
+
+🐛 TROUBLESHOOTING
+═════════════════════════════════════════════════════════════════════════════
+
+Problema: "WebSocket connection refused"
+→ Verifica que web_zone_server esté corriendo
+→ Verifica que el puerto 8765 sea accesible
+→ Comprueba firewall
+
+Problema: "Goal failed: NavigateToPose action server not available"
+→ Nav2 no está corriendo
+→ Verifica: ros2 action list | grep navigate
+→ Lanza el Nav2 stack
+
+Problema: "Goal failed: fromLL conversion failed"
+→ robot_localization no está disponible
+→ Verifica: ros2 service list | grep fromLL
+→ Lanza el robot_localization
+
+Problema: GPS no aparece en el mapa
+→ No hay datos en /gps/fix
+→ Verifica: ros2 topic echo /gps/fix
+→ Lanza el driver GPS
+
+
+📊 MONITOREO EN TIEMPO REAL
+═════════════════════════════════════════════════════════════════════════════
+
+Terminal 1 - Ver topics de navegación:
+  $ ros2 topic echo /navigate_to_pose/_action/status
+
+Terminal 2 - Ver feedback:
+  $ ros2 topic echo /navigate_to_pose/_action/feedback
+
+Terminal 3 - Ver resultado final:
+  $ ros2 topic echo /navigate_to_pose/_action/result
+
+Terminal 4 - Ver posición GPS actual:
+  $ ros2 topic echo /gps/fix
+
+
+🎓 LOGS EN EL NAVEGADOR
+═════════════════════════════════════════════════════════════════════════════
+
+El panel "Events" en el navegador muestra TODOS los mensajes:
+
+[timestamp][tx] = Enviado por cliente
+[timestamp][rx] = Recibido del servidor
+[timestamp][info] = Evento del navegador
+
+Puedes usarlo para debuggear cualquier problema.
+
+
+✨ CHECKLIST FINAL
+═════════════════════════════════════════════════════════════════════════════
+
+Antes de considerar que está "listo":
+
+  ☑ Code compila sin errores
+  ☑ WebSocket conecta exitosamente
+  ☑ GPS broadcast @ 1Hz (revisar timestamps)
+  ☑ Botón "Set Goal" funciona (se pone rojo)
+  ☑ Click en mapa coloca marcador rojo
+  ☑ Status muestra "Goal sent" o error específico
+  ☑ Nav2 recibe el goal
+  ☑ Robot empieza a navegar
+  ☑ "Cancel Goal" detiene la navegación
+  ☑ Marcador se elimina cuando se cancela
+
+
+📞 PREGUNTAS COMUNES
+═════════════════════════════════════════════════════════════════════════════
+
+P: ¿Puedo cambiar la tasa de GPS a 2Hz?
+R: Sí, en el launch file: {'gps_broadcast_hz': 2.0}
+
+P: ¿Qué pasa si hay dos goals activos?
+R: El nuevo cancela el anterior automáticamente
+
+P: ¿Funciona sin Nav2?
+R: No, necesita Nav2 con navigate_to_pose
+
+P: ¿Puedo usar en otra máquina?
+R: Sí, solo cambia la URL del WebSocket a ws://<IP>:8765
+
+P: ¿Se guardan los goals?
+R: No, se pierden al reiniciar. Eso es una feature futura.
+
